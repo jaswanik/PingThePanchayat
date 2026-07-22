@@ -349,7 +349,8 @@
                     });
 
                     // Download URL using our dual-purpose GET endpoint
-                    const downloadUrl = `http://localhost:5000/api/reports/${r.report_id}/download`;
+                    const downloadUrl = `${window.API_BASE}/reports/${r.report_id}/download`;
+
 
                     return `
                         <tr class="animated-row" style="animation-delay: ${index * 0.05}s;">

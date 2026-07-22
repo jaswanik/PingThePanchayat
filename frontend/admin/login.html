@@ -32,14 +32,20 @@
             e.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            const res = await Utils.post('/admin/login', { username, password });
-            if (res.status === 'success') {
-                Utils.saveAdmin(res.admin);
-                window.location.href = 'dashboard.html';
-            } else {
-                alert('Invalid credentials');
+            try {
+                const res = await Utils.post('/admin/login', { username, password });
+                if (res && res.status === 'success') {
+                    Utils.saveAdmin(res.admin);
+                    window.location.href = 'dashboard.html';
+                } else {
+                    alert(res ? res.message || 'Invalid admin credentials' : 'Invalid admin credentials');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Connection error. Please try again.');
             }
         });
     </script>
+
 </body>
 </html>

@@ -290,7 +290,8 @@
     <script src="admin-utils.js"></script>
     <script>
         requireAdmin();
-        const API = 'http://localhost:5000/api';
+        const API = window.API_BASE;
+
         let allComplaints = [];
         let modalCid = null;
 

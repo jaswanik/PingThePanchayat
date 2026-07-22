@@ -4,7 +4,10 @@
  */
 
 // Define API_BASE globally on window if not already defined
-window.API_BASE = window.API_BASE || 'http://localhost:5000/api';
+window.API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '8000'
+    ? 'http://localhost:5000/api'
+    : '/api';
+
 
 // Define requireAdmin helper globally
 window.requireAdmin = function() {

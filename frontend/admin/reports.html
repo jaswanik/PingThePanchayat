@@ -399,7 +399,7 @@
             }
 
             try {
-                const response = await fetch('http://localhost:5000/api/reports/generate', {
+                const response = await fetch(`${window.API_BASE}/reports/generate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ report_type: type, filters: filters })
@@ -462,7 +462,7 @@
                     }
 
                     // Direct download link pointing to updated GET endpoint
-                    const downloadUrl = `http://localhost:5000/api/reports/${r.report_id}/download`;
+                    const downloadUrl = `${window.API_BASE}/reports/${r.report_id}/download`;
 
                     return `
                         <tr>
