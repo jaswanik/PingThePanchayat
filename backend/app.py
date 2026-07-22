@@ -31,7 +31,17 @@ def gen_report_id(report_type):
     prefix = {'Weekly': 'WEEK', 'Monthly': 'MON', 'Custom': 'CUST'}.get(report_type, 'RPT')
     return f"RPT-{prefix}-{ts}"
 
+@app.route('/api')
+@app.route('/api/')
+def api_status():
+    return jsonify({
+        "status": "online",
+        "service": "PingThePanchayat API",
+        "version": "3.0"
+    })
+
 # ─── AUTH ENDPOINTS ──────────────────────────────────────────────────────────
+
 
 @app.route('/api/auth/register', methods=['POST'])
 def register():
