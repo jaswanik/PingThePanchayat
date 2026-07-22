@@ -10,7 +10,8 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 from report_generator import generate_pdf_report, generate_weekly_report, generate_monthly_report
 
-app = Flask(__name__)
+frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend'))
+app = Flask(__name__, static_folder=frontend_dir, static_url_path='')
 CORS(app)
 
 # Initialize DB on start
@@ -1083,5 +1084,25 @@ def get_report():
     return send_file(report_path, as_attachment=True)
 
 
+# ─── FRONTEND STATIC ROUTING ──────────────────────────────────────────────────
+
+@app.route('/')
+def index():
+    return app.send_static_file('index.html')
+
+@app.route('/<path:path>')
+def serve_static(path):
+    if path.startswith('api/'):
+        return jsonify({"status": "error", "message": "API endpoint not found"}), 404
+    target = os.path.join(app.static_folder, path)
+    if os.path.exists(target) and os.path.isfile(target):
+        return app.send_static_file(path)
+    if os.path.isdir(target) and os.path.exists(os.path.join(target, 'index.html')):
+        return app.send_static_file(os.path.join(path, 'index.html'))
+    return app.send_static_file('index.html')
+
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
+
