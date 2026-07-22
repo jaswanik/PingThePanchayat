@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Intelligence Center | PingThePanchayat</title>
+    <link rel="stylesheet" href="../style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* ── Aging metric cards ── */
+        .aging-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+            margin-bottom: 1.75rem;
+        }
+        .aging-card {
+            border-radius: 1rem;
+            padding: 1.4rem 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .aging-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.08;
+        }
+        .aging-card.green  { border: 1px solid rgba(16,185,129,0.35); background: rgba(16,185,129,0.07); }
+        .aging-card.yellow { border: 1px solid rgba(245,158,11,0.35); background: rgba(245,158,11,0.07); }
+        .aging-card.red    { border: 1px solid rgba(239,68,68,0.35);  background: rgba(239,68,68,0.07); }
+        .aging-card-icon { font-size: 1.6rem; }
+        .aging-card.green  .aging-card-icon { color: var(--accent); }
+        .aging-card.yellow .aging-card-icon { color: var(--warning); }
+        .aging-card.red    .aging-card-icon { color: var(--danger); }
+        .aging-card-label { font-size: 0.8rem; color: var(--text-gray); font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; }
+        .aging-card-value { font-size: 2.4rem; font-weight: 800; line-height: 1; }
+        .aging-card.green  .aging-card-value { color: var(--accent); }
+        .aging-card.yellow .aging-card-value { color: var(--warning); }
+        .aging-card.red    .aging-card-value { color: var(--danger); }
+        .aging-card-sub { font-size: 0.78rem; color: var(--text-gray); }
+
+        /* ── Overdue table ── */
+        .overdue-label {
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--danger);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* ── Health evolution section ── */
+        .health-evolution-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.85rem 1rem;
+            border-radius: 0.75rem;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            margin-bottom: 0.6rem;
+            transition: background 0.2s;
+        }
+        .health-evolution-row:hover { background: rgba(255,255,255,0.06); }
+        .health-evo-area { font-weight: 700; font-size: 0.9rem; }
+        .health-evo-score-bar-wrap {
+            flex: 1;
+            margin: 0 1.5rem;
+            position: relative;
+        }
+        .health-evo-bar-track {
+            height: 6px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 99px;
+            overflow: hidden;
+        }
+        .health-evo-bar-fill {
+            height: 100%;
+            border-radius: 99px;
+            transition: width 0.8s ease;
+        }
+        .health-evo-score-label {
+            font-size: 0.8rem;
+            color: var(--text-gray);
+            margin-top: 0.25rem;
+        }
+        .health-evo-trend {
+            font-size: 0.82rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        /* Section header */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.25rem;
+        }
+        .section-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="admin-layout">
+    <div class="sidebar">
+        <div class="logo" style="margin-bottom: 2rem;"><i class="fas fa-satellite-dish"></i> <span>Ping</span>Panchayat</div>
+        <a href="dashboard.html" class="sidebar-link"><i class="fas fa-th-large"></i> Dashboard</a>
+        <a href="management.html" class="sidebar-link"><i class="fas fa-tasks"></i> Complaints</a>
+        <a href="resolution.html" class="sidebar-link"><i class="fas fa-check-circle"></i> Resolution Center</a>
+        <a href="analytics.html" class="sidebar-link active"><i class="fas fa-chart-line"></i> Analytics</a>
+        <a href="decision.html" class="sidebar-link"><i class="fas fa-brain"></i> Decision Center</a>
+        <a href="reports.html" class="sidebar-link"><i class="fas fa-file-pdf"></i> Reports</a>
+        <a href="report-history.html" class="sidebar-link"><i class="fas fa-history"></i> Report History</a>
+        <div style="margin-top: auto;">
+            <button onclick="Utils.logout()" class="btn btn-secondary" style="width: 100%;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </div>
+
+    <main class="container">
+        <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2 style="font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px;">Data Intelligence Center</h2>
+                <p style="color: var(--text-gray); font-size: 0.9rem;">Real-time analytical graphs, risk maps, and performance indicators.</p>
+            </div>
+        </header>
+
+        <!-- Resolution Analytics metrics summary pill bar -->
+        <div class="metric-pill-row" id="metricsSummaryRow" style="display: none;">
+            <div class="metric-pill">
+                <span class="metric-pill-label">Total Logs:</span>
+                <span class="metric-pill-value" id="pillTotal">0</span>
+            </div>
+            <div class="metric-pill">
+                <span class="metric-pill-label">Resolved:</span>
+                <span class="metric-pill-value" id="pillResolved" style="color: var(--success);">0</span>
+            </div>
+            <div class="metric-pill">
+                <span class="metric-pill-label">In Progress:</span>
+                <span class="metric-pill-value" id="pillProgress" style="color: var(--primary);">0</span>
+            </div>
+            <div class="metric-pill">
+                <span class="metric-pill-label">Pending:</span>
+                <span class="metric-pill-value" id="pillPending" style="color: var(--warning);">0</span>
+            </div>
+            <div class="metric-pill">
+                <span class="metric-pill-label">Avg Health:</span>
+                <span class="metric-pill-value" id="pillHealth">--</span>
+            </div>
+            <div class="metric-pill">
+                <span class="metric-pill-label">Res. Rate:</span>
+                <span class="metric-pill-value" id="pillRate">0%</span>
+            </div>
+        </div>
+
+        <div id="analyticsContent" style="display: none;">
+            <!-- 2x2 Grid Layout for charts -->
+            <div class="grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 2rem;">
+                <!-- Chart 1: Issue Distribution -->
+                <div class="glass-card" style="padding: 1.5rem;">
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;"><i class="fas fa-chart-pie" style="margin-right: 0.5rem; color: var(--secondary);"></i>Issue Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="typeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Complaint Trends -->
+                <div class="glass-card" style="padding: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 1.1rem; font-weight: 700;"><i class="fas fa-chart-area" style="margin-right: 0.5rem; color: var(--primary);"></i>Complaint Log Trends</h3>
+                        <div class="toggle-group" id="trendPeriodToggle">
+                            <button class="toggle-btn active" data-period="daily">Daily</button>
+                            <button class="toggle-btn" data-period="weekly">Weekly</button>
+                            <button class="toggle-btn" data-period="monthly">Monthly</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                <!-- Chart 3: Area Risk Ranking -->
+                <div class="glass-card" style="padding: 1.5rem;">
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;"><i class="fas fa-sort-amount-down" style="margin-right: 0.5rem; color: var(--danger);"></i>Area Risk Rank Score</h3>
+                    <div class="chart-container">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 4: Health Score Comparison -->
+                <div class="glass-card" style="padding: 1.5rem;">
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;"><i class="fas fa-heartbeat" style="margin-right: 0.5rem; color: var(--success);"></i>Ward Health Indexes</h3>
+                    <div class="chart-container">
+                        <canvas id="healthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════════════════════
+                 SECTION: Complaint Aging Analysis
+                 ══════════════════════════════════════════════════════════ -->
+            <div class="glass-card" style="padding: 1.5rem; margin-top: 2rem; border-top: 3px solid rgba(239,68,68,0.35);">
+                <div class="section-header">
+                    <i class="fas fa-hourglass-half" style="color: var(--warning); font-size: 1.2rem;"></i>
+                    <h3>Complaint Aging Analysis</h3>
+                    <span style="font-size:0.78rem; color:var(--text-gray); margin-left:0.25rem;">— time-in-system breakdown</span>
+                </div>
+
+                <!-- 3 aging metric cards -->
+                <div class="aging-cards" id="agingCardsRow">
+                    <div class="aging-card green">
+                        <div class="aging-card-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="aging-card-label">0 – 7 Days</div>
+                        <div class="aging-card-value" id="aging07">—</div>
+                        <div class="aging-card-sub">Fresh / within SLA</div>
+                    </div>
+                    <div class="aging-card yellow">
+                        <div class="aging-card-icon"><i class="fas fa-clock"></i></div>
+                        <div class="aging-card-label">8 – 15 Days</div>
+                        <div class="aging-card-value" id="aging815">—</div>
+                        <div class="aging-card-sub">Approaching overdue</div>
+                    </div>
+                    <div class="aging-card red">
+                        <div class="aging-card-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div class="aging-card-label">15+ Days</div>
+                        <div class="aging-card-value" id="aging15plus">—</div>
+                        <div class="aging-card-sub">Overdue — needs escalation</div>
+                    </div>
+                </div>
+
+                <!-- Overdue complaints table -->
+                <div class="overdue-label">
+                    <i class="fas fa-fire"></i> Overdue Complaints (15+ Days)
+                </div>
+                <div style="overflow-x:auto;">
+                    <table id="overdueTable">
+                        <thead>
+                            <tr>
+                                <th>Ref ID</th>
+                                <th>Location / Ward</th>
+                                <th>Issue Type</th>
+                                <th>Severity</th>
+                                <th>Age (Days)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overdueTableBody">
+                            <tr><td colspan="5" style="text-align:center; color:var(--text-gray); padding:1.5rem;">Loading overdue records…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════════════════════
+                 SECTION: Health Score Evolution
+                 ══════════════════════════════════════════════════════════ -->
+            <div class="glass-card" style="padding: 1.5rem; margin-top: 2rem; border-top: 3px solid rgba(99,102,241,0.4);">
+                <div class="section-header">
+                    <i class="fas fa-chart-line" style="color: var(--primary); font-size: 1.2rem;"></i>
+                    <h3>Health Score Evolution</h3>
+                    <span style="font-size:0.78rem; color:var(--text-gray); margin-left:0.25rem;">— area-level trend indicators</span>
+                </div>
+                <div id="healthEvolutionList">
+                    <div style="text-align:center; color:var(--text-gray); padding:1.5rem;">Loading health data…</div>
+                </div>
+            </div>
+
+        </div><!-- /#analyticsContent -->
+
+        <div id="noData" class="empty-state">
+            <i class="fas fa-chart-bar"></i>
+            <p>No data available to analyze. Real-time charts will appear here after users submit reports.</p>
+        </div>
+    </main>
+
+    <script src="admin-utils.js"></script>
+    <script>
+        if (!Utils.getAdmin()) window.location.href = 'login.html';
+
+        let typeChartInstance  = null;
+        let trendChartInstance = null;
+        let riskChartInstance  = null;
+        let healthChartInstance = null;
+        let complaintsData = [];
+
+        // Chart.js dark-mode defaults
+        Chart.defaults.color = 'var(--text-gray)';
+        Chart.defaults.font.family = "'Outfit', sans-serif";
+        Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15, 23, 42, 0.95)';
+        Chart.defaults.plugins.tooltip.borderColor = 'rgba(255, 255, 255, 0.1)';
+        Chart.defaults.plugins.tooltip.borderWidth = 1;
+
+        async function loadAnalytics() {
+            const data = await Utils.get('/analytics');
+            complaintsData = await Utils.get('/complaints');
+
+            if (!data.total || data.total === 0) {
+                document.getElementById('noData').style.display = 'block';
+                document.getElementById('analyticsContent').style.display = 'none';
+                document.getElementById('metricsSummaryRow').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('noData').style.display = 'none';
+            document.getElementById('analyticsContent').style.display = 'block';
+            document.getElementById('metricsSummaryRow').style.display = 'flex';
+
+            // Populate top metric summary pills
+            document.getElementById('pillTotal').innerText    = data.total;
+            document.getElementById('pillResolved').innerText = data.resolved;
+            document.getElementById('pillProgress').innerText = data.in_progress;
+            document.getElementById('pillPending').innerText  = data.pending;
+            document.getElementById('pillHealth').innerText   = data.avg_health_score + '%';
+            document.getElementById('pillRate').innerText     = data.resolution_rate + '%';
+
+            // 1. Issue Distribution Doughnut Chart
+            renderTypeChart(data.by_type);
+
+            // 2. Complaint Trends Line Chart (Daily by default)
+            renderTrendChart('daily');
+
+            // 3. Area Risk Ranking Horizontal Bar Chart
+            renderRiskChart(data.health_data);
+
+            // 4. Health Score Comparison Vertical Bar Chart
+            renderHealthChart(data.health_data);
+
+            // 5. Complaint Aging Analysis
+            await loadAgingAnalysis(data);
+
+            // 6. Health Score Evolution
+            renderHealthEvolution(data.health_data);
+        }
+
+        /* ── CHART 1: Issue Distribution ─────────────────────────────── */
+        function renderTypeChart(byType) {
+            const ctx = document.getElementById('typeChart').getContext('2d');
+            if (typeChartInstance) typeChartInstance.destroy();
+            typeChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(byType),
+                    datasets: [{
+                        data: Object.values(byType),
+                        backgroundColor: ['#6366f1','#ec4899','#10b981','#f59e0b','#3b82f6','#8b5cf6'],
+                        borderWidth: 1,
+                        borderColor: 'rgba(255,255,255,0.1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 15, font: { size: 12 } }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        /* ── CHART 2: Complaint Trends ───────────────────────────────── */
+        function renderTrendChart(period) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            if (trendChartInstance) trendChartInstance.destroy();
+
+            let labels = [];
+            let counts = [];
+
+            if (period === 'daily') {
+                const dayMap = {};
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    const key = d.toISOString().split('T')[0];
+                    dayMap[key] = 0;
+                }
+                complaintsData.forEach(c => {
+                    const dateStr = new Date(c.timestamp).toISOString().split('T')[0];
+                    if (dayMap[dateStr] !== undefined) dayMap[dateStr]++;
+                });
+                labels = Object.keys(dayMap).map(d => new Date(d).toLocaleDateString([], { month: 'short', day: 'numeric' }));
+                counts = Object.values(dayMap);
+            } else if (period === 'weekly') {
+                const weeks = [0, 0, 0, 0];
+                const now = new Date();
+                complaintsData.forEach(c => {
+                    const diffDays = Math.floor((now - new Date(c.timestamp)) / (1000 * 60 * 60 * 24));
+                    const wIdx = Math.floor(diffDays / 7);
+                    if (wIdx >= 0 && wIdx < 4) weeks[3 - wIdx]++;
+                });
+                labels = ['3 Weeks Ago', '2 Weeks Ago', 'Last Week', 'This Week'];
+                counts = weeks;
+            } else if (period === 'monthly') {
+                const monthMap = {};
+                const now = new Date();
+                for (let i = 5; i >= 0; i--) {
+                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    const key = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+                    monthMap[key] = 0;
+                }
+                complaintsData.forEach(c => {
+                    const key = new Date(c.timestamp).toLocaleString('default', { month: 'short', year: '2-digit' });
+                    if (monthMap[key] !== undefined) monthMap[key]++;
+                });
+                labels = Object.keys(monthMap);
+                counts = Object.values(monthMap);
+            }
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+            gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+            trendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Incidents Logged',
+                        data: counts,
+                        backgroundColor: gradient,
+                        borderColor: '#6366f1',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#6366f1',
+                        pointBorderColor: 'rgba(255,255,255,0.8)',
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { precision: 0 } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        /* ── CHART 3: Area Risk Ranking ──────────────────────────────── */
+        function renderRiskChart(healthData) {
+            const ctx = document.getElementById('riskChart').getContext('2d');
+            if (riskChartInstance) riskChartInstance.destroy();
+
+            const sorted = Object.entries(healthData)
+                .map(([area, info]) => ({ area, riskScore: 100 - info.score, riskLevel: info.risk }))
+                .sort((a, b) => b.riskScore - a.riskScore);
+
+            const colors = sorted.map(s => {
+                if (s.riskLevel === 'Critical') return '#ef4444';
+                if (s.riskLevel === 'Moderate') return '#f59e0b';
+                return '#10b981';
+            });
+
+            riskChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sorted.map(s => s.area),
+                    datasets: [{
+                        label: 'Risk Score (100 - Health)',
+                        data: sorted.map(s => s.riskScore),
+                        backgroundColor: colors,
+                        borderRadius: 5,
+                        barThickness: 15
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { grid: { display: false } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        /* ── CHART 4: Ward Health Indexes ────────────────────────────── */
+        function renderHealthChart(healthData) {
+            const ctx = document.getElementById('healthChart').getContext('2d');
+            if (healthChartInstance) healthChartInstance.destroy();
+
+            const areas  = Object.keys(healthData);
+            const scores = Object.values(healthData).map(v => v.score);
+            const colors = Object.values(healthData).map(v => {
+                if (v.score < 60) return '#ef4444';
+                if (v.score < 90) return '#f59e0b';
+                return '#10b981';
+            });
+
+            healthChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: areas,
+                    datasets: [{
+                        label: 'Health Index (%)',
+                        data: scores,
+                        backgroundColor: colors,
+                        borderRadius: 6,
+                        barThickness: 25
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { max: 100, min: 0, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        /* ── SECTION 5: Complaint Aging Analysis ─────────────────────── */
+        async function loadAgingAnalysis(analyticsData) {
+            try {
+                const aging = await Utils.get('/analytics/aging');
+
+                // Populate the 3 metric cards
+                const counts = aging.counts || {};
+                document.getElementById('aging07').textContent     = counts['0_7']      ?? '0';
+                document.getElementById('aging815').textContent    = counts['8_15']     ?? '0';
+                document.getElementById('aging15plus').textContent = counts['15_plus']  ?? '0';
+
+                // Populate overdue table from bucket_15_plus array
+                const overdueList = aging.bucket_15_plus || [];
+                const tbody = document.getElementById('overdueTableBody');
+
+                if (overdueList.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--accent); padding:1.5rem;"><i class="fas fa-check-circle"></i> No overdue complaints — great work!</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = overdueList.map(c => {
+                    const severityColor = c.severity === 'High' ? 'var(--danger)' : c.severity === 'Medium' ? 'var(--warning)' : 'var(--text-gray)';
+                    const badgeClass   = c.severity === 'High' ? 'badge-high' : c.severity === 'Medium' ? 'badge-pending' : 'badge-resolved';
+                    return `
+                        <tr>
+                            <td><code style="color:var(--primary);">${c.reference || 'PTP-' + c.complaint_id}</code></td>
+                            <td>${c.location || '—'}</td>
+                            <td>${c.issue_type || '—'}</td>
+                            <td><span class="badge ${badgeClass}">${c.severity || '—'}</span></td>
+                            <td>
+                                <span style="font-weight:700; color:var(--danger); display:flex; align-items:center; gap:0.3rem;">
+                                    <i class="fas fa-fire" style="font-size:0.75rem;"></i> ${c.age_days ?? '—'}d
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.warn('Aging API unavailable, falling back to client-side calculation.', err);
+
+                // Graceful client-side fallback using complaintsData
+                const now = Date.now();
+                let c07 = 0, c815 = 0, c15 = 0;
+                const overdue = [];
+
+                complaintsData.forEach(c => {
+                    const ageDays = Math.floor((now - new Date(c.timestamp)) / 86400000);
+                    if (ageDays <= 7)       c07++;
+                    else if (ageDays <= 15) c815++;
+                    else {
+                        c15++;
+                        overdue.push({ ...c, age_days: ageDays });
+                    }
+                });
+
+                document.getElementById('aging07').textContent     = c07;
+                document.getElementById('aging815').textContent    = c815;
+                document.getElementById('aging15plus').textContent = c15;
+
+                const tbody = document.getElementById('overdueTableBody');
+                if (overdue.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--accent); padding:1.5rem;"><i class="fas fa-check-circle"></i> No overdue complaints!</td></tr>`;
+                } else {
+                    tbody.innerHTML = overdue.sort((a, b) => b.age_days - a.age_days).map(c => {
+                        const badgeClass = c.severity === 'High' ? 'badge-high' : c.severity === 'Medium' ? 'badge-pending' : 'badge-resolved';
+                        return `
+                            <tr>
+                                <td><code style="color:var(--primary);">${c.reference || 'PTP-' + c.complaint_id}</code></td>
+                                <td>${c.location || '—'}</td>
+                                <td>${c.issue_type || '—'}</td>
+                                <td><span class="badge ${badgeClass}">${c.severity || '—'}</span></td>
+                                <td><span style="font-weight:700; color:var(--danger);"><i class="fas fa-fire" style="font-size:0.75rem;"></i> ${c.age_days}d</span></td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            }
+        }
+
+        /* ── SECTION 6: Health Score Evolution ───────────────────────── */
+        function renderHealthEvolution(healthData) {
+            const list = document.getElementById('healthEvolutionList');
+            if (!healthData || Object.keys(healthData).length === 0) {
+                list.innerHTML = '<div style="color:var(--text-gray);text-align:center;padding:1.5rem;">No health data available.</div>';
+                return;
+            }
+
+            // Sort by score ascending (most at-risk first)
+            const sorted = Object.entries(healthData)
+                .map(([area, info]) => ({ area, score: info.score, risk: info.risk }))
+                .sort((a, b) => a.score - b.score);
+
+            list.innerHTML = sorted.map(item => {
+                let trendLabel, trendColor, trendIcon;
+                if (item.score >= 80) {
+                    trendLabel = '🟢 Improving';
+                    trendColor = 'var(--accent)';
+                    trendIcon  = 'fa-arrow-trend-up';
+                } else if (item.score >= 60) {
+                    trendLabel = '🟡 Stable';
+                    trendColor = 'var(--warning)';
+                    trendIcon  = 'fa-minus';
+                } else {
+                    trendLabel = '🔴 Declining';
+                    trendColor = 'var(--danger)';
+                    trendIcon  = 'fa-arrow-trend-down';
+                }
+
+                const barColor = item.score >= 80 ? '#10b981' : item.score >= 60 ? '#f59e0b' : '#ef4444';
+                const barWidth = Math.min(100, Math.max(0, item.score));
+
+                return `
+                    <div class="health-evolution-row">
+                        <div class="health-evo-area" style="min-width:130px;">${item.area}</div>
+                        <div class="health-evo-score-bar-wrap">
+                            <div class="health-evo-bar-track">
+                                <div class="health-evo-bar-fill" style="width:${barWidth}%; background:${barColor};"></div>
+                            </div>
+                            <div class="health-evo-score-label">Score: <strong style="color:white;">${item.score}%</strong></div>
+                        </div>
+                        <div class="health-evo-trend" style="color:${trendColor};">
+                            ${trendLabel}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Hook up trend period toggles
+        document.querySelectorAll('#trendPeriodToggle .toggle-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('#trendPeriodToggle .toggle-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                renderTrendChart(e.target.getAttribute('data-period'));
+            });
+        });
+
+        loadAnalytics();
+    </script>
+</body>
+</html>

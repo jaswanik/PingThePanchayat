@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resolution Center | PingThePanchayat Admin</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* ── KPI Grid ── */
+        .res-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2rem; }
+        .res-kpi { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 1.25rem; padding: 1.5rem; display: flex; align-items: center; gap: 1rem; transition: transform 0.2s; }
+        .res-kpi:hover { transform: translateY(-3px); }
+        .res-kpi-icon { width: 3rem; height: 3rem; border-radius: 0.9rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+        .res-kpi-val { font-size: 2rem; font-weight: 800; }
+        .res-kpi-lbl { font-size: 0.75rem; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.1rem; }
+
+        /* ── Main Grid ── */
+        .res-main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+        /* ── Complaint Rows ── */
+        .res-complaint-row { padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center; gap: 1rem; transition: background 0.15s; }
+        .res-complaint-row:last-child { border-bottom: none; }
+        .res-complaint-row:hover { background: rgba(255,255,255,0.03); border-radius: 0.75rem; }
+        .res-ref { font-family: monospace; font-size: 0.78rem; color: var(--primary); font-weight: 700; white-space: nowrap; }
+        .res-issue { font-size: 0.88rem; font-weight: 600; flex: 1; }
+        .res-location { font-size: 0.75rem; color: var(--text-gray); }
+        .res-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+
+        /* ── Lifecycle Badges ── */
+        .lc-badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; font-weight: 700; padding: 0.18rem 0.6rem; border-radius: 2rem; text-transform: uppercase; letter-spacing: 0.3px; }
+        .lc-submitted { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); }
+        .lc-verified   { background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
+        .lc-escalated  { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+        .lc-in-progress{ background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+        .lc-resolved   { background: rgba(16,185,129,0.15); color: var(--success); border: 1px solid rgba(16,185,129,0.3); }
+        .lc-archived   { background: rgba(236,72,153,0.12); color: var(--secondary); border: 1px solid rgba(236,72,153,0.3); }
+
+        /* ── Priority Badges ── */
+        .pri-critical { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+        .pri-high     { background: rgba(245,158,11,0.15); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
+        .pri-normal   { background: rgba(99,102,241,0.12); color: var(--primary); border: 1px solid rgba(99,102,241,0.3); }
+        .pri-low      { background: rgba(148,163,184,0.12); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); }
+
+        /* ── Modal ── */
+        .res-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); z-index: 900; align-items: center; justify-content: center; }
+        .res-modal.open { display: flex; }
+        .res-modal-box { background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 1.5rem; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; padding: 2rem; animation: slideUp 0.25s ease; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.7rem 0.9rem; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 0.6rem; color: white; font-size: 0.875rem; outline: none; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); }
+        .form-group textarea { resize: vertical; min-height: 90px; }
+
+        /* ── Satisfaction Stars ── */
+        .sat-bar { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.25rem; }
+        .sat-stars { color: #fbbf24; font-size: 1rem; }
+        .sat-val { font-size: 1.5rem; font-weight: 800; }
+        .sat-count { font-size: 0.78rem; color: var(--text-gray); }
+
+        /* ── Evidence Preview ── */
+        .evidence-img { width: 100%; height: 120px; object-fit: cover; border-radius: 0.5rem; border: 1px solid var(--glass-border); margin-top: 0.35rem; }
+
+        /* ── Overdue Alert ── */
+        .overdue-tag { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); font-size: 0.65rem; padding: 0.1rem 0.45rem; border-radius: 2rem; font-weight: 700; animation: pulse-red 1.6s infinite; }
+        @keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.5)} 50%{box-shadow:0 0 0 5px rgba(239,68,68,0)} }
+
+        /* ── Toast ── */
+        .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 0.9rem 1.5rem; border-radius: 0.9rem; font-size: 0.875rem; font-weight: 600; z-index: 9999; animation: fadeInUp 0.3s ease; display: flex; align-items: center; gap: 0.65rem; box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+        .toast-success { background: #064e3b; border: 1px solid var(--success); color: #6ee7b7; }
+        .toast-error   { background: #450a0a; border: 1px solid var(--danger); color: #fca5a5; }
+        @keyframes fadeInUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .dept-badge { background: rgba(99,102,241,0.12); color: var(--primary); border: 1px solid rgba(99,102,241,0.25); border-radius: 0.4rem; font-size: 0.72rem; padding: 0.15rem 0.5rem; font-weight: 600; }
+        .section-title { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .section-title i { color: var(--primary); }
+        .empty-msg { text-align: center; color: var(--text-gray); padding: 2rem; font-size: 0.9rem; }
+
+        /* Satisfaction Gauge */
+        .sat-gauge { display: flex; flex-direction: column; align-items: center; padding: 1rem; }
+        .sat-score-big { font-size: 3.5rem; font-weight: 900; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sat-label { font-size: 0.78rem; color: var(--text-gray); }
+        .sat-dist { width: 100%; margin-top: 1rem; }
+        .sat-dist-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+        .sat-dist-label { font-size: 0.72rem; color: var(--text-gray); width: 4rem; text-align: right; }
+        .sat-dist-bar-bg { flex: 1; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+        .sat-dist-bar { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 0.8s ease; }
+        .sat-dist-count { font-size: 0.7rem; color: var(--text-gray); width: 2rem; }
+
+        @media (max-width: 900px) { .res-kpi-grid { grid-template-columns: repeat(2,1fr); } .res-main-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body class="admin-layout">
+    <!-- ═══ SIDEBAR ═══ -->
+    <div class="sidebar">
+        <div class="logo" style="margin-bottom: 2rem;"><i class="fas fa-satellite-dish"></i> <span>Ping</span>Panchayat</div>
+        <a href="dashboard.html" class="sidebar-link"><i class="fas fa-th-large"></i> Dashboard</a>
+        <a href="management.html" class="sidebar-link"><i class="fas fa-tasks"></i> Complaints</a>
+        <a href="resolution.html" class="sidebar-link active"><i class="fas fa-check-circle"></i> Resolution Center</a>
+        <a href="analytics.html" class="sidebar-link"><i class="fas fa-chart-line"></i> Analytics</a>
+        <a href="decision.html" class="sidebar-link"><i class="fas fa-brain"></i> Decision Center</a>
+        <a href="reports.html" class="sidebar-link"><i class="fas fa-file-pdf"></i> Reports</a>
+        <a href="report-history.html" class="sidebar-link"><i class="fas fa-history"></i> Report History</a>
+        <div style="margin-top: auto;">
+            <button onclick="Utils.logout()" class="btn btn-secondary" style="width: 100%;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </div>
+
+    <main class="container">
+        <header style="margin-bottom: 2rem;">
+            <h1 style="font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px;">Resolution Center</h1>
+            <p style="color: var(--text-gray); font-size: 0.9rem;">Manage complaint resolution, track evidence, and measure citizen satisfaction.</p>
+        </header>
+
+        <!-- ═══ KPI Row ═══ -->
+        <div class="res-kpi-grid" id="kpiGrid">
+            <div class="res-kpi">
+                <div class="res-kpi-icon" style="background:rgba(16,185,129,0.12);color:var(--success);"><i class="fas fa-check-circle"></i></div>
+                <div><div class="res-kpi-val" id="kpiResolved">–</div><div class="res-kpi-lbl">Resolved</div></div>
+            </div>
+            <div class="res-kpi">
+                <div class="res-kpi-icon" style="background:rgba(59,130,246,0.12);color:#60a5fa;"><i class="fas fa-cogs"></i></div>
+                <div><div class="res-kpi-val" id="kpiInProgress">–</div><div class="res-kpi-lbl">In Progress</div></div>
+            </div>
+            <div class="res-kpi">
+                <div class="res-kpi-icon" style="background:rgba(239,68,68,0.12);color:var(--danger);"><i class="fas fa-exclamation-circle"></i></div>
+                <div><div class="res-kpi-val" id="kpiOverdue">–</div><div class="res-kpi-lbl">Overdue</div></div>
+            </div>
+            <div class="res-kpi">
+                <div class="res-kpi-icon" style="background:rgba(245,158,11,0.12);color:var(--warning);"><i class="fas fa-star"></i></div>
+                <div><div class="res-kpi-val" id="kpiSat">–</div><div class="res-kpi-lbl">Avg Satisfaction</div></div>
+            </div>
+        </div>
+
+        <!-- ═══ Main Content Grid ═══ -->
+        <div class="res-main-grid">
+
+            <!-- Left: In Progress Complaints -->
+            <div class="glass-card" style="padding: 1.5rem;">
+                <div class="section-title"><i class="fas fa-cogs"></i> In Progress — Awaiting Resolution</div>
+                <div id="inProgressList"><div class="empty-msg"><i class="fas fa-spinner fa-spin"></i> Loading...</div></div>
+            </div>
+
+            <!-- Right: Satisfaction Index -->
+            <div class="glass-card" style="padding: 1.5rem;">
+                <div class="section-title"><i class="fas fa-smile"></i> Citizen Satisfaction Index</div>
+                <div class="sat-gauge">
+                    <div class="sat-score-big" id="satScoreBig">–</div>
+                    <div class="sat-label">out of 5.0 &nbsp;·&nbsp; <span id="satTotal">0</span> responses</div>
+                    <div class="sat-stars" id="satStars" style="margin-top:0.5rem;font-size:1.6rem;"></div>
+                </div>
+                <div class="sat-dist" id="satDistGrid"></div>
+            </div>
+
+        </div>
+
+        <!-- ═══ Second Row ═══ -->
+        <div class="res-main-grid" style="margin-top: 1.5rem;">
+
+            <!-- Resolved Complaints -->
+            <div class="glass-card" style="padding: 1.5rem;">
+                <div class="section-title"><i class="fas fa-check-double"></i> Recently Resolved</div>
+                <div id="resolvedList"><div class="empty-msg">Loading...</div></div>
+            </div>
+
+            <!-- Pending / Submitted -->
+            <div class="glass-card" style="padding: 1.5rem;">
+                <div class="section-title"><i class="fas fa-inbox"></i> Pending Department Assignment</div>
+                <div id="pendingList"><div class="empty-msg">Loading...</div></div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- ═══ DEPARTMENT ASSIGNMENT MODAL ═══ -->
+    <div class="res-modal" id="deptModal" onclick="closeDeptIfBg(event)">
+        <div class="res-modal-box">
+            <div class="modal-header">
+                <h3 style="font-size:1.15rem;font-weight:800;"><i class="fas fa-building" style="color:var(--primary);margin-right:0.5rem;"></i>Assign Department</h3>
+                <button onclick="document.getElementById('deptModal').classList.remove('open')" style="background:none;border:none;color:var(--text-gray);font-size:1.25rem;cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <p id="deptModalRef" style="color:var(--text-gray);font-size:0.85rem;margin-bottom:1.25rem;"></p>
+            <div class="form-group">
+                <label>Department</label>
+                <select id="deptSelect">
+                    <option value="">Select department...</option>
+                    <option>Public Works Department</option>
+                    <option>Water Supply & Sanitation</option>
+                    <option>Electricity Department</option>
+                    <option>Health & Sanitation</option>
+                    <option>Roads & Infrastructure</option>
+                    <option>Urban Planning</option>
+                    <option>Solid Waste Management</option>
+                    <option>Parks & Recreation</option>
+                    <option>Fire & Safety</option>
+                    <option>Law Enforcement Support</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" style="width:100%;" onclick="submitDeptAssign()"><i class="fas fa-check"></i> Assign Department</button>
+        </div>
+    </div>
+
+    <!-- ═══ ACTION PLAN MODAL ═══ -->
+    <div class="res-modal" id="actionModal" onclick="closeActionIfBg(event)">
+        <div class="res-modal-box">
+            <div class="modal-header">
+                <h3 style="font-size:1.15rem;font-weight:800;"><i class="fas fa-clipboard-list" style="color:var(--primary);margin-right:0.5rem;"></i>Set Action Plan</h3>
+                <button onclick="document.getElementById('actionModal').classList.remove('open')" style="background:none;border:none;color:var(--text-gray);font-size:1.25rem;cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <p id="actionModalRef" style="color:var(--text-gray);font-size:0.85rem;margin-bottom:1.25rem;"></p>
+            <div class="form-group">
+                <label>Action Plan Details</label>
+                <textarea id="actionPlanText" placeholder="Describe the planned corrective action..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Priority</label>
+                <select id="actionPriority">
+                    <option value="Normal">Normal</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                    <option value="Low">Low</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Target Deadline</label>
+                <input type="date" id="actionDeadline">
+            </div>
+            <button class="btn btn-primary" style="width:100%;" onclick="submitActionPlan()"><i class="fas fa-rocket"></i> Activate Action Plan</button>
+        </div>
+    </div>
+
+    <!-- ═══ RESOLVE MODAL ═══ -->
+    <div class="res-modal" id="resolveModal" onclick="closeResolveIfBg(event)">
+        <div class="res-modal-box">
+            <div class="modal-header">
+                <h3 style="font-size:1.15rem;font-weight:800;"><i class="fas fa-check-circle" style="color:var(--success);margin-right:0.5rem;"></i>Mark as Resolved</h3>
+                <button onclick="document.getElementById('resolveModal').classList.remove('open')" style="background:none;border:none;color:var(--text-gray);font-size:1.25rem;cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <p id="resolveModalRef" style="color:var(--text-gray);font-size:0.85rem;margin-bottom:1.25rem;"></p>
+            <div class="form-group">
+                <label>Resolution Notes <span style="color:var(--danger);">*</span></label>
+                <textarea id="resolutionNotes" placeholder="Describe how the issue was resolved..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Resolution Date</label>
+                <input type="date" id="resolutionDate">
+            </div>
+            <div class="form-group">
+                <label>Before Image URL (optional)</label>
+                <input type="text" id="beforeImageUrl" placeholder="https://... or leave blank">
+            </div>
+            <div class="form-group">
+                <label>After Image URL (optional)</label>
+                <input type="text" id="afterImageUrl" placeholder="https://... or leave blank">
+            </div>
+            <div class="form-group">
+                <label>Evidence Document URL (optional)</label>
+                <input type="text" id="evidenceDoc" placeholder="https://... or leave blank">
+            </div>
+            <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#059669,#10b981);" onclick="submitResolve()"><i class="fas fa-check"></i> Confirm Resolution</button>
+        </div>
+    </div>
+
+    <!-- ═══ SUCCESS STORY MODAL ═══ -->
+    <div class="res-modal" id="storyModal" onclick="closeStoryIfBg(event)">
+        <div class="res-modal-box">
+            <div class="modal-header">
+                <h3 style="font-size:1.15rem;font-weight:800;"><i class="fas fa-trophy" style="color:#fbbf24;margin-right:0.5rem;"></i>Feature as Success Story</h3>
+                <button onclick="document.getElementById('storyModal').classList.remove('open')" style="background:none;border:none;color:var(--text-gray);font-size:1.25rem;cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <p id="storyModalRef" style="color:var(--text-gray);font-size:0.85rem;margin-bottom:1.25rem;"></p>
+            <div class="form-group">
+                <label>Success Story Title</label>
+                <input type="text" id="storyTitle" placeholder="e.g. Broken Road Fixed in Ward 5">
+            </div>
+            <div class="form-group">
+                <label>Community Impact Statement</label>
+                <textarea id="storyImpact" placeholder="Describe the positive impact on the community..."></textarea>
+            </div>
+            <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#b45309,#f59e0b);" onclick="submitStory()"><i class="fas fa-trophy"></i> Feature this Story</button>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toastBox" style="position:fixed;bottom:2rem;right:2rem;z-index:9999;"></div>
+
+    <script src="admin-utils.js"></script>
+    <script>
+        requireAdmin();
+        const API = 'http://localhost:5000/api';
+        let allComplaints = [];
+        let modalCid = null;
+
+        function toast(msg, type='success') {
+            const el = document.createElement('div');
+            el.className = `toast toast-${type}`;
+            el.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
+            document.getElementById('toastBox').appendChild(el);
+            setTimeout(() => el.remove(), 3500);
+        }
+
+        function lcBadge(lc) {
+            const cls = { 'Submitted':'lc-submitted','Verified':'lc-verified','Escalated':'lc-escalated','In Progress':'lc-in-progress','Resolved':'lc-resolved','Archived':'lc-archived' }[lc] || 'lc-submitted';
+            return `<span class="lc-badge ${cls}">${lc||'Submitted'}</span>`;
+        }
+
+        function priClass(p) {
+            return { 'Critical':'pri-critical','High':'pri-high','Normal':'pri-normal','Low':'pri-low' }[p] || 'pri-normal';
+        }
+
+        function isOverdue(c) {
+            if (!c.action_deadline) return false;
+            try { return new Date(c.action_deadline) < new Date() && c.lifecycle_status === 'In Progress'; } catch { return false; }
+        }
+
+        // ── Load KPIs ──
+        async function loadKPIs() {
+            try {
+                const response = await fetch(`${API}/resolution/overview`);
+                if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                const data = await response.json();
+                document.getElementById('kpiResolved').textContent = data.resolved || 0;
+                document.getElementById('kpiInProgress').textContent = data.in_progress || 0;
+                document.getElementById('kpiOverdue').textContent = data.overdue || 0;
+                document.getElementById('kpiSat').textContent = data.avg_satisfaction ? data.avg_satisfaction.toFixed(1) : '–';
+            } catch (err) {
+                console.error("Failed to load KPIs:", err);
+                document.getElementById('kpiResolved').textContent = 'Error';
+                document.getElementById('kpiInProgress').textContent = 'Error';
+                document.getElementById('kpiOverdue').textContent = 'Error';
+                document.getElementById('kpiSat').textContent = 'Error';
+            }
+        }
+
+        // ── Load Satisfaction ──
+        async function loadSatisfaction() {
+            try {
+                const response = await fetch(`${API}/analytics/satisfaction`);
+                if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                const s = await response.json();
+                const score = s.avg_rating || 0;
+                document.getElementById('satScoreBig').textContent = score.toFixed(1);
+                document.getElementById('satTotal').textContent = s.total_feedback || 0;
+                // Stars
+                const filled = Math.round(score);
+                document.getElementById('satStars').innerHTML = [1,2,3,4,5].map(i =>
+                    `<i class="fa${i<=filled?'s':'r'} fa-star" style="color:${i<=filled?'#fbbf24':'rgba(255,255,255,0.15)'}"></i>`
+                ).join('');
+                // Distribution bars
+                const dist = s.distribution || {};
+                const total = s.total_feedback || 1;
+                document.getElementById('satDistGrid').innerHTML = ['5','4','3','2','1'].map(k => {
+                    const cnt = dist[k] || 0;
+                    const pct = Math.round((cnt / total) * 100);
+                    return `<div class="sat-dist-row">
+                        <div class="sat-dist-label">${k}★</div>
+                        <div class="sat-dist-bar-bg"><div class="sat-dist-bar" style="width:${pct}%"></div></div>
+                        <div class="sat-dist-count">${cnt}</div>
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                console.error("Failed to load satisfaction metrics:", err);
+                document.getElementById('satScoreBig').textContent = '–';
+                document.getElementById('satTotal').textContent = '0';
+                document.getElementById('satStars').innerHTML = '';
+                document.getElementById('satDistGrid').innerHTML = '<div class="empty-msg"><i class="fas fa-exclamation-triangle"></i> Failed to load satisfaction metrics.</div>';
+            }
+        }
+
+        // ── Load Complaints ──
+        async function loadComplaints() {
+            try {
+                const response = await fetch(`${API}/complaints`);
+                if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                const data = await response.json();
+                allComplaints = data;
+                renderInProgress();
+                renderResolved();
+                renderPending();
+            } catch (err) {
+                console.error("Failed to load complaints:", err);
+                allComplaints = [];
+                document.getElementById('inProgressList').innerHTML = '<div class="empty-msg"><i class="fas fa-exclamation-triangle"></i> Failed to load in-progress complaints.</div>';
+                document.getElementById('resolvedList').innerHTML = '<div class="empty-msg"><i class="fas fa-exclamation-triangle"></i> Failed to load recently resolved complaints.</div>';
+                document.getElementById('pendingList').innerHTML = '<div class="empty-msg"><i class="fas fa-exclamation-triangle"></i> Failed to load pending complaints.</div>';
+            }
+        }
+
+        function fmtRef(c) { return c.reference || `PTP-2026-${String(c.complaint_id).padStart(4,'0')}`; }
+
+        function renderInProgress() {
+            const list = allComplaints.filter(c => c.lifecycle_status === 'In Progress');
+            const el = document.getElementById('inProgressList');
+            if (!list.length) { el.innerHTML = '<div class="empty-msg"><i class="fas fa-check"></i> No complaints currently in progress.</div>'; return; }
+            el.innerHTML = list.map(c => `
+                <div class="res-complaint-row">
+                    <div>
+                        <div class="res-ref">${fmtRef(c)}</div>
+                        <div class="res-issue">${c.issue_type}</div>
+                        <div class="res-location"><i class="fas fa-map-marker-alt" style="font-size:0.65rem;"></i> ${c.location}</div>
+                        <div style="margin-top:0.35rem;display:flex;gap:0.35rem;flex-wrap:wrap;">
+                            ${lcBadge(c.lifecycle_status)}
+                            ${c.action_priority ? `<span class="lc-badge ${priClass(c.action_priority)}">${c.action_priority}</span>` : ''}
+                            ${isOverdue(c) ? `<span class="overdue-tag"><i class="fas fa-clock"></i> OVERDUE</span>` : ''}
+                        </div>
+                        ${c.department ? `<div style="margin-top:0.3rem;"><span class="dept-badge"><i class="fas fa-building"></i> ${c.department}</span></div>` : ''}
+                        ${c.action_deadline ? `<div style="font-size:0.7rem;color:var(--text-gray);margin-top:0.2rem;"><i class="fas fa-calendar"></i> Deadline: ${c.action_deadline}</div>` : ''}
+                    </div>
+                    <div class="res-actions" style="margin-left:auto;">
+                        <button class="btn btn-secondary" style="font-size:0.75rem;padding:0.4rem 0.75rem;" title="Resolve" onclick="openResolveModal(${c.complaint_id})"><i class="fas fa-check-circle"></i></button>
+                    </div>
+                </div>`).join('');
+        }
+
+        function renderResolved() {
+            const list = allComplaints.filter(c => c.lifecycle_status === 'Resolved' || c.lifecycle_status === 'Archived').slice(0,10);
+            const el = document.getElementById('resolvedList');
+            if (!list.length) { el.innerHTML = '<div class="empty-msg">No resolved complaints yet.</div>'; return; }
+            el.innerHTML = list.map(c => `
+                <div class="res-complaint-row">
+                    <div>
+                        <div class="res-ref">${fmtRef(c)}</div>
+                        <div class="res-issue">${c.issue_type}</div>
+                        <div class="res-location"><i class="fas fa-map-marker-alt" style="font-size:0.65rem;"></i> ${c.location}</div>
+                        <div style="margin-top:0.35rem;display:flex;gap:0.35rem;flex-wrap:wrap;">
+                            ${lcBadge(c.lifecycle_status)}
+                            ${c.satisfaction_score ? `<span class="lc-badge" style="background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);"><i class="fas fa-star"></i> ${c.satisfaction_score}/5</span>` : ''}
+                        </div>
+                        ${c.resolution_date ? `<div style="font-size:0.7rem;color:var(--text-gray);margin-top:0.2rem;"><i class="fas fa-calendar-check"></i> Resolved: ${c.resolution_date}</div>` : ''}
+                    </div>
+                    <div class="res-actions" style="margin-left:auto;">
+                        ${!c.is_success_story ? `<button class="btn btn-secondary" style="font-size:0.72rem;padding:0.4rem 0.65rem;" title="Feature as Success Story" onclick="openStoryModal(${c.complaint_id})"><i class="fas fa-trophy"></i></button>` : `<span style="color:#fbbf24;font-size:0.75rem;"><i class="fas fa-trophy"></i> Featured</span>`}
+                        <button class="btn btn-secondary" style="font-size:0.72rem;padding:0.4rem 0.65rem;" title="Archive" onclick="archiveComplaint(${c.complaint_id})"><i class="fas fa-archive"></i></button>
+                    </div>
+                </div>`).join('');
+        }
+
+        function renderPending() {
+            const list = allComplaints.filter(c => c.lifecycle_status === 'Submitted' || c.lifecycle_status === 'Verified' || c.lifecycle_status === 'Escalated').slice(0,10);
+            const el = document.getElementById('pendingList');
+            if (!list.length) { el.innerHTML = '<div class="empty-msg"><i class="fas fa-check"></i> All complaints have been assigned.</div>'; return; }
+            el.innerHTML = list.map(c => `
+                <div class="res-complaint-row">
+                    <div>
+                        <div class="res-ref">${fmtRef(c)}</div>
+                        <div class="res-issue">${c.issue_type}</div>
+                        <div class="res-location"><i class="fas fa-map-marker-alt" style="font-size:0.65rem;"></i> ${c.location}</div>
+                        <div style="margin-top:0.35rem;display:flex;gap:0.35rem;flex-wrap:wrap;">
+                            ${lcBadge(c.lifecycle_status)}
+                            <span class="lc-badge badge-${(c.severity||'low').toLowerCase()}">${c.severity}</span>
+                        </div>
+                    </div>
+                    <div class="res-actions" style="margin-left:auto;flex-direction:column;gap:0.4rem;">
+                        <button class="btn btn-secondary" style="font-size:0.72rem;padding:0.4rem 0.75rem;white-space:nowrap;" onclick="openDeptModal(${c.complaint_id})"><i class="fas fa-building"></i> Assign</button>
+                        <button class="btn btn-secondary" style="font-size:0.72rem;padding:0.4rem 0.75rem;white-space:nowrap;" onclick="openActionModal(${c.complaint_id})"><i class="fas fa-clipboard-list"></i> Plan</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        // ── Dept Modal ──
+        function openDeptModal(cid) {
+            modalCid = cid;
+            const c = allComplaints.find(x => x.complaint_id === cid);
+            document.getElementById('deptModalRef').textContent = c ? `${fmtRef(c)} — ${c.issue_type} @ ${c.location}` : '';
+            document.getElementById('deptSelect').value = '';
+            document.getElementById('deptModal').classList.add('open');
+        }
+        function closeDeptIfBg(e) { if (e.target === document.getElementById('deptModal')) document.getElementById('deptModal').classList.remove('open'); }
+        async function submitDeptAssign() {
+            const dept = document.getElementById('deptSelect').value;
+            if (!dept) { toast('Please select a department', 'error'); return; }
+            try {
+                await fetch(`${API}/complaints/${modalCid}/assign-department`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({department: dept}) });
+                document.getElementById('deptModal').classList.remove('open');
+                toast('Department assigned successfully!');
+                reload();
+            } catch { toast('Failed to assign department', 'error'); }
+        }
+
+        // ── Action Plan Modal ──
+        function openActionModal(cid) {
+            modalCid = cid;
+            const c = allComplaints.find(x => x.complaint_id === cid);
+            document.getElementById('actionModalRef').textContent = c ? `${fmtRef(c)} — ${c.issue_type} @ ${c.location}` : '';
+            document.getElementById('actionPlanText').value = '';
+            document.getElementById('actionPriority').value = 'Normal';
+            document.getElementById('actionDeadline').value = '';
+            document.getElementById('actionModal').classList.add('open');
+        }
+        function closeActionIfBg(e) { if (e.target === document.getElementById('actionModal')) document.getElementById('actionModal').classList.remove('open'); }
+        async function submitActionPlan() {
+            const plan = document.getElementById('actionPlanText').value.trim();
+            if (!plan) { toast('Action plan is required', 'error'); return; }
+            try {
+                await fetch(`${API}/complaints/${modalCid}/action-plan`, {
+                    method:'PATCH', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ action_plan: plan, action_priority: document.getElementById('actionPriority').value, action_deadline: document.getElementById('actionDeadline').value })
+                });
+                document.getElementById('actionModal').classList.remove('open');
+                toast('Action plan activated!');
+                reload();
+            } catch { toast('Failed to set action plan', 'error'); }
+        }
+
+        // ── Resolve Modal ──
+        function openResolveModal(cid) {
+            modalCid = cid;
+            const c = allComplaints.find(x => x.complaint_id === cid);
+            document.getElementById('resolveModalRef').textContent = c ? `${fmtRef(c)} — ${c.issue_type} @ ${c.location}` : '';
+            document.getElementById('resolutionNotes').value = '';
+            document.getElementById('resolutionDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('beforeImageUrl').value = '';
+            document.getElementById('afterImageUrl').value = '';
+            document.getElementById('evidenceDoc').value = '';
+            document.getElementById('resolveModal').classList.add('open');
+        }
+        function closeResolveIfBg(e) { if (e.target === document.getElementById('resolveModal')) document.getElementById('resolveModal').classList.remove('open'); }
+        async function submitResolve() {
+            const notes = document.getElementById('resolutionNotes').value.trim();
+            if (!notes) { toast('Resolution notes are required', 'error'); return; }
+            try {
+                await fetch(`${API}/complaints/${modalCid}/resolve`, {
+                    method:'PATCH', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({
+                        resolution_notes: notes,
+                        resolution_date: document.getElementById('resolutionDate').value,
+                        before_image_url: document.getElementById('beforeImageUrl').value,
+                        after_image_url: document.getElementById('afterImageUrl').value,
+                        evidence_document: document.getElementById('evidenceDoc').value
+                    })
+                });
+                document.getElementById('resolveModal').classList.remove('open');
+                toast('Complaint marked as Resolved! ✅');
+                reload();
+            } catch { toast('Failed to resolve complaint', 'error'); }
+        }
+
+        // ── Archive ──
+        async function archiveComplaint(cid) {
+            if (!confirm('Archive this complaint?')) return;
+            try {
+                await fetch(`${API}/complaints/${cid}/archive`, { method:'PATCH' });
+                toast('Complaint archived.');
+                reload();
+            } catch { toast('Failed to archive', 'error'); }
+        }
+
+        // ── Success Story Modal ──
+        function openStoryModal(cid) {
+            modalCid = cid;
+            const c = allComplaints.find(x => x.complaint_id === cid);
+            document.getElementById('storyModalRef').textContent = c ? `${fmtRef(c)} — ${c.issue_type} @ ${c.location}` : '';
+            document.getElementById('storyTitle').value = c ? c.issue_type + ' — ' + c.location : '';
+            document.getElementById('storyImpact').value = '';
+            document.getElementById('storyModal').classList.add('open');
+        }
+        function closeStoryIfBg(e) { if (e.target === document.getElementById('storyModal')) document.getElementById('storyModal').classList.remove('open'); }
+        async function submitStory() {
+            const title = document.getElementById('storyTitle').value.trim();
+            const impact = document.getElementById('storyImpact').value.trim();
+            try {
+                await fetch(`${API}/complaints/${modalCid}/success-story`, {
+                    method:'PATCH', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ title, impact })
+                });
+                document.getElementById('storyModal').classList.remove('open');
+                toast('Success story featured! 🏆');
+                reload();
+            } catch { toast('Failed to feature story', 'error'); }
+        }
+
+        function reload() {
+            loadKPIs();
+            loadComplaints();
+            loadSatisfaction();
+        }
+
+        reload();
+    </script>
+</body>
+</html>

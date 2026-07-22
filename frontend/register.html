@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account | PingThePanchayat</title>
+    <meta name="description" content="Register as a citizen on PingThePanchayat to report and track civic issues in your community.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+        .auth-card { width: 100%; max-width: 520px; }
+        .auth-logo { text-align: center; margin-bottom: 2rem; }
+        .auth-logo .logo { justify-content: center; font-size: 1.75rem; }
+        .auth-logo p { color: var(--text-gray); margin-top: 0.5rem; font-size: 0.9rem; }
+        .auth-header { margin-bottom: 2rem; }
+        .auth-header h2 { font-size: 1.75rem; font-weight: 800; }
+        .auth-header p { color: var(--text-gray); margin-top: 0.4rem; font-size: 0.9rem; }
+        .input-group { position: relative; }
+        .input-group .input-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-gray); font-size: 0.9rem; pointer-events: none; }
+        .input-group input, .input-group select { padding-left: 2.75rem; }
+        .input-group .toggle-pw { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-gray); cursor: pointer; font-size: 0.9rem; }
+        .pw-strength { height: 4px; border-radius: 2px; margin-top: 0.5rem; transition: all 0.3s; background: var(--glass-border); }
+        .pw-strength-bar { height: 100%; border-radius: 2px; transition: all 0.4s; }
+        .pw-hint { font-size: 0.78rem; color: var(--text-gray); margin-top: 0.3rem; }
+        .security-info { background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2); border-radius: 0.75rem; padding: 0.9rem 1rem; margin-bottom: 1.5rem; font-size: 0.83rem; color: var(--text-gray); }
+        .security-info i { color: var(--primary); margin-right: 0.4rem; }
+        .back-home { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-gray); text-decoration: none; font-size: 0.85rem; margin-bottom: 2rem; transition: color 0.2s; }
+        .back-home:hover { color: white; }
+        .auth-footer-link { text-align: center; margin-top: 1.5rem; color: var(--text-gray); font-size: 0.9rem; }
+        .auth-footer-link a { color: var(--primary); text-decoration: none; font-weight: 600; }
+        #toast { position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.75rem; }
+        .toast-item { display: flex; align-items: center; gap: 0.75rem; background: rgba(15,23,42,0.95); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 1rem 1.25rem; min-width: 280px; max-width: 360px; backdrop-filter: blur(20px); box-shadow: 0 8px 25px rgba(0,0,0,0.4); animation: slideInRight 0.3s ease; }
+        .toast-item.success { border-left: 4px solid var(--accent); }
+        .toast-item.error { border-left: 4px solid var(--danger); }
+        .toast-item.info { border-left: 4px solid var(--primary); }
+        .toast-icon { font-size: 1.1rem; }
+        .toast-item.success .toast-icon { color: var(--accent); }
+        .toast-item.error .toast-icon { color: var(--danger); }
+        .toast-item.info .toast-icon { color: var(--primary); }
+        .toast-msg { font-size: 0.875rem; flex: 1; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .btn-loading { opacity: 0.7; pointer-events: none; }
+        .spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        select option { background: #0f172a; color: white; }
+    </style>
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-card">
+            <a href="index.html" class="back-home"><i class="fas fa-arrow-left"></i> Back to Home</a>
+            <div class="glass-card">
+                <div class="auth-logo">
+                    <div class="logo"><i class="fas fa-satellite-dish"></i> <span>Ping</span>ThePanchayat</div>
+                    <p>Citizen Portal – Registration</p>
+                </div>
+                <div class="auth-header">
+                    <h2><i class="fas fa-user-plus" style="color:var(--primary);"></i> Create Account</h2>
+                    <p>Join thousands of citizens making a difference</p>
+                </div>
+
+                <form id="regForm" autocomplete="on" novalidate>
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <div class="input-group">
+                            <i class="fas fa-user input-icon"></i>
+                            <input type="text" id="name" placeholder="Enter your full name" required autocomplete="name">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <div class="input-group">
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input type="email" id="email" placeholder="you@example.com" required autocomplete="email">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact">Mobile Number</label>
+                        <div class="input-group">
+                            <i class="fas fa-phone input-icon"></i>
+                            <input type="tel" id="contact" placeholder="+91 XXXXXXXXXX" required autocomplete="tel">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <div class="input-group">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" id="password" placeholder="Min. 8 characters" required autocomplete="new-password" oninput="checkStrength(this.value)">
+                            <button type="button" class="toggle-pw" onclick="togglePw()"><i class="fas fa-eye" id="eyeIcon"></i></button>
+                        </div>
+                        <div class="pw-strength"><div class="pw-strength-bar" id="pwBar"></div></div>
+                        <div class="pw-hint" id="pwHint">Enter a strong password</div>
+                    </div>
+
+                    <!-- Security Question Section -->
+                    <div class="security-info">
+                        <i class="fas fa-shield-alt"></i>
+                        <strong>Account Recovery Setup</strong> – Choose a security question to recover your account if you forget your password.
+                    </div>
+                    <div class="form-group">
+                        <label for="security_question">Security Question</label>
+                        <div class="input-group">
+                            <i class="fas fa-question-circle input-icon"></i>
+                            <select id="security_question" required style="padding-left:2.75rem;">
+                                <option value="">Select a security question</option>
+                                <option value="What is the name of your first pet?">What is the name of your first pet?</option>
+                                <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                                <option value="What city were you born in?">What city were you born in?</option>
+                                <option value="What was the name of your primary school?">What was the name of your primary school?</option>
+                                <option value="What is your favorite childhood food?">What is your favorite childhood food?</option>
+                                <option value="What is the name of your oldest sibling?">What is the name of your oldest sibling?</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="security_answer">Your Answer</label>
+                        <div class="input-group">
+                            <i class="fas fa-key input-icon"></i>
+                            <input type="text" id="security_answer" placeholder="Your secret answer (case-insensitive)" required autocomplete="off">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width:100%; padding:0.9rem; font-size:1rem;" id="regBtn">
+                        <i class="fas fa-user-plus"></i> Create Account
+                    </button>
+                </form>
+                <div class="auth-footer-link">
+                    Already have an account? <a href="login.html">Sign in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+    <script src="utils.js"></script>
+    <script>
+        if (Utils.getUser()) window.location.href = 'user/complaint.html';
+
+        function showToast(msg, type = 'info') {
+            const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
+            const t = document.getElementById('toast');
+            const el = document.createElement('div');
+            el.className = `toast-item ${type}`;
+            el.innerHTML = `<i class="fas ${icons[type]} toast-icon"></i><span class="toast-msg">${msg}</span>`;
+            t.appendChild(el);
+            setTimeout(() => el.remove(), 5000);
+        }
+
+        function togglePw() {
+            const pw = document.getElementById('password');
+            const icon = document.getElementById('eyeIcon');
+            pw.type = pw.type === 'password' ? 'text' : 'password';
+            icon.className = pw.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+        }
+
+        function checkStrength(val) {
+            const bar = document.getElementById('pwBar');
+            const hint = document.getElementById('pwHint');
+            let score = 0;
+            if (val.length >= 8) score++;
+            if (/[A-Z]/.test(val)) score++;
+            if (/[0-9]/.test(val)) score++;
+            if (/[^A-Za-z0-9]/.test(val)) score++;
+            const levels = [
+                { w: '0%', color: 'transparent', text: 'Enter a strong password' },
+                { w: '25%', color: '#ef4444', text: 'Weak password' },
+                { w: '50%', color: '#f59e0b', text: 'Fair password' },
+                { w: '75%', color: '#6366f1', text: 'Good password' },
+                { w: '100%', color: '#10b981', text: 'Strong password ✓' }
+            ];
+            bar.style.width = levels[score].w;
+            bar.style.background = levels[score].color;
+            hint.textContent = val.length === 0 ? 'Enter a strong password' : levels[score].text;
+            hint.style.color = levels[score].color || 'var(--text-gray)';
+        }
+
+        document.getElementById('regForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const contact = document.getElementById('contact').value.trim();
+            const password = document.getElementById('password').value;
+            const security_question = document.getElementById('security_question').value;
+            const security_answer = document.getElementById('security_answer').value.trim();
+
+            if (!name || !email || !contact || !password || !security_question || !security_answer) {
+                showToast('All fields are required.', 'error'); return;
+            }
+            if (password.length < 8) {
+                showToast('Password must be at least 8 characters.', 'error'); return;
+            }
+
+            const btn = document.getElementById('regBtn');
+            btn.classList.add('btn-loading');
+            btn.innerHTML = '<span class="spinner"></span> Creating Account...';
+
+            try {
+                const res = await Utils.post('/auth/register', { name, email, contact, password, security_question, security_answer });
+                if (res.status === 'success') {
+                    showToast('Account created successfully! Redirecting to login...', 'success');
+                    setTimeout(() => window.location.href = 'login.html', 2000);
+                } else {
+                    showToast(res.message || 'Registration failed. Please try again.', 'error');
+                    btn.classList.remove('btn-loading');
+                    btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+                }
+            } catch (err) {
+                showToast('Unable to connect. Please ensure the server is running.', 'error');
+                btn.classList.remove('btn-loading');
+                btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+            }
+        });
+    </script>
+</body>
+</html>

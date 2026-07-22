@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | PingThePanchayat</title>
+    <meta name="description" content="Login to your PingThePanchayat citizen account to report and track civic issues.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+        .auth-card { width: 100%; max-width: 460px; }
+        .auth-logo { text-align: center; margin-bottom: 2.5rem; }
+        .auth-logo .logo { justify-content: center; font-size: 1.75rem; }
+        .auth-logo p { color: var(--text-gray); margin-top: 0.5rem; font-size: 0.9rem; }
+        .auth-header { margin-bottom: 2rem; }
+        .auth-header h2 { font-size: 1.75rem; font-weight: 800; }
+        .auth-header p { color: var(--text-gray); margin-top: 0.4rem; font-size: 0.9rem; }
+        .input-group { position: relative; }
+        .input-group .input-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-gray); font-size: 0.9rem; pointer-events: none; }
+        .input-group input { padding-left: 2.75rem; }
+        .input-group .toggle-pw { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-gray); cursor: pointer; font-size: 0.9rem; }
+        .input-group .toggle-pw:hover { color: white; }
+        .forgot-link { text-align: right; margin-top: -0.75rem; margin-bottom: 1.5rem; }
+        .forgot-link a { color: var(--primary); font-size: 0.85rem; text-decoration: none; }
+        .forgot-link a:hover { text-decoration: underline; }
+        .divider { display: flex; align-items: center; gap: 1rem; color: var(--text-gray); font-size: 0.85rem; margin: 1.5rem 0; }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--glass-border); }
+        .auth-footer-link { text-align: center; margin-top: 1.5rem; color: var(--text-gray); font-size: 0.9rem; }
+        .auth-footer-link a { color: var(--primary); text-decoration: none; font-weight: 600; }
+        .back-home { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-gray); text-decoration: none; font-size: 0.85rem; margin-bottom: 2rem; transition: color 0.2s; }
+        .back-home:hover { color: white; }
+
+        /* Toast */
+        #toast { position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.75rem; }
+        .toast-item { display: flex; align-items: center; gap: 0.75rem; background: rgba(15,23,42,0.95); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 1rem 1.25rem; min-width: 280px; max-width: 360px; backdrop-filter: blur(20px); box-shadow: 0 8px 25px rgba(0,0,0,0.4); animation: slideInRight 0.3s ease; }
+        .toast-item.success { border-left: 4px solid var(--accent); }
+        .toast-item.error { border-left: 4px solid var(--danger); }
+        .toast-item.info { border-left: 4px solid var(--primary); }
+        .toast-icon { font-size: 1.1rem; }
+        .toast-item.success .toast-icon { color: var(--accent); }
+        .toast-item.error .toast-icon { color: var(--danger); }
+        .toast-item.info .toast-icon { color: var(--primary); }
+        .toast-msg { font-size: 0.875rem; flex: 1; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .btn-loading { opacity: 0.7; pointer-events: none; }
+        .spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-card">
+            <a href="index.html" class="back-home"><i class="fas fa-arrow-left"></i> Back to Home</a>
+            <div class="glass-card">
+                <div class="auth-logo">
+                    <div class="logo"><i class="fas fa-satellite-dish"></i> <span>Ping</span>ThePanchayat</div>
+                    <p>Citizen Portal</p>
+                </div>
+                <div class="auth-header">
+                    <h2><i class="fas fa-sign-in-alt" style="color:var(--primary);"></i> Welcome Back</h2>
+                    <p>Sign in to your citizen account</p>
+                </div>
+                <form id="loginForm" autocomplete="on">
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <div class="input-group">
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input type="email" id="email" placeholder="you@example.com" required autocomplete="email">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0.75rem;">
+                        <label for="password">Password</label>
+                        <div class="input-group">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password">
+                            <button type="button" class="toggle-pw" onclick="togglePw()" id="togglePwBtn"><i class="fas fa-eye" id="eyeIcon"></i></button>
+                        </div>
+                    </div>
+                    <div class="forgot-link">
+                        <a href="forgot-password.html">Forgot Password?</a>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%; padding:0.9rem; font-size:1rem;" id="loginBtn">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </button>
+                </form>
+                <div class="divider">or</div>
+                <div class="auth-footer-link">
+                    New citizen? <a href="register.html">Create an account</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script src="utils.js"></script>
+    <script>
+        // If already logged in, redirect
+        if (Utils.getUser()) window.location.href = 'user/complaint.html';
+
+        function showToast(msg, type = 'info') {
+            const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
+            const t = document.getElementById('toast');
+            const el = document.createElement('div');
+            el.className = `toast-item ${type}`;
+            el.innerHTML = `<i class="fas ${icons[type]} toast-icon"></i><span class="toast-msg">${msg}</span>`;
+            t.appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
+
+        function togglePw() {
+            const pw = document.getElementById('password');
+            const icon = document.getElementById('eyeIcon');
+            if (pw.type === 'password') { pw.type = 'text'; icon.className = 'fas fa-eye-slash'; }
+            else { pw.type = 'password'; icon.className = 'fas fa-eye'; }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            btn.classList.add('btn-loading');
+            btn.innerHTML = '<span class="spinner"></span> Signing In...';
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await Utils.post('/auth/login', { email, password });
+                if (res.status === 'success') {
+                    Utils.saveUser(res.user);
+                    showToast('Login successful! Redirecting...', 'success');
+                    setTimeout(() => window.location.href = 'user/complaint.html', 1000);
+                } else {
+                    showToast(res.message || 'Invalid email or password', 'error');
+                    btn.classList.remove('btn-loading');
+                    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+                }
+            } catch (err) {
+                showToast('Unable to connect. Please ensure the server is running.', 'error');
+                btn.classList.remove('btn-loading');
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+            }
+        });
+    </script>
+</body>
+</html>

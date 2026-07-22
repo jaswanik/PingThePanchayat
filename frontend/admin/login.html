@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | PingThePanchayat</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="glass-card">
+            <h2 style="margin-bottom: 2rem;"><i class="fas fa-lock"></i> Authority Login</h2>
+            <form id="adminLoginForm">
+                <div class="form-group">
+                    <label>Admin Username</label>
+                    <input type="text" id="username" value="admin" required>
+                </div>
+                <div class="form-group">
+                    <label>Admin Password</label>
+                    <input type="password" id="password" value="admin123" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Access Admin Panel</button>
+            </form>
+            <p style="margin-top: 1.5rem; text-align: center; color: var(--text-gray); font-size: 0.8rem;">
+                Authorized personnel only. All access is logged.
+            </p>
+        </div>
+    </div>
+    <script src="admin-utils.js"></script>
+    <script>
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const res = await Utils.post('/admin/login', { username, password });
+            if (res.status === 'success') {
+                Utils.saveAdmin(res.admin);
+                window.location.href = 'dashboard.html';
+            } else {
+                alert('Invalid credentials');
+            }
+        });
+    </script>
+</body>
+</html>

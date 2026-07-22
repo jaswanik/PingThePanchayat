@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decision Support Center | PingThePanchayat</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* ── Authority Action Queue styles ── */
+        #actionQueueTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #actionQueueTable thead th {
+            background: rgba(239, 68, 68, 0.08);
+            color: var(--text-gray);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.7rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        #actionQueueTable tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            transition: background 0.18s;
+        }
+        #actionQueueTable tbody tr:hover {
+            background: rgba(239, 68, 68, 0.06);
+        }
+        #actionQueueTable tbody td {
+            padding: 0.75rem 1rem;
+            font-size: 0.88rem;
+            vertical-align: middle;
+        }
+        #actionQueueTable tbody td code {
+            background: rgba(99, 102, 241, 0.12);
+            color: var(--primary);
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-size: 0.82rem;
+        }
+
+        /* Pulsing danger border for the queue card */
+        @keyframes pulseBorder {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.0); }
+            50%       { box-shadow: 0 0 0 4px rgba(239,68,68,0.15); }
+        }
+        .action-queue-card {
+            animation: pulseBorder 3s ease-in-out infinite;
+        }
+
+        /* Escalate button hover glow */
+        .btn-escalate {
+            background: rgba(239,68,68,0.15);
+            color: var(--danger);
+            border: 1px solid rgba(239,68,68,0.35);
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            padding: 0.3rem 0.65rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            transition: background 0.2s, border-color 0.2s, transform 0.15s;
+        }
+        .btn-escalate:hover {
+            background: rgba(239,68,68,0.3);
+            border-color: rgba(239,68,68,0.6);
+            transform: translateY(-1px);
+        }
+        .btn-escalate:active { transform: scale(0.96); }
+        .btn-escalate:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Empty queue state */
+        .queue-empty {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-gray);
+        }
+        .queue-empty i { font-size: 2rem; color: var(--accent); margin-bottom: 0.5rem; display: block; }
+    </style>
+</head>
+<body class="admin-layout">
+    <div class="sidebar">
+        <div class="logo" style="margin-bottom: 2rem;"><i class="fas fa-satellite-dish"></i> <span>Ping</span>Panchayat</div>
+        <a href="dashboard.html" class="sidebar-link"><i class="fas fa-th-large"></i> Dashboard</a>
+        <a href="management.html" class="sidebar-link"><i class="fas fa-tasks"></i> Complaints</a>
+        <a href="resolution.html" class="sidebar-link"><i class="fas fa-check-circle"></i> Resolution Center</a>
+        <a href="analytics.html" class="sidebar-link"><i class="fas fa-chart-line"></i> Analytics</a>
+        <a href="decision.html" class="sidebar-link active"><i class="fas fa-brain"></i> Decision Center</a>
+        <a href="reports.html" class="sidebar-link"><i class="fas fa-file-pdf"></i> Reports</a>
+        <a href="report-history.html" class="sidebar-link"><i class="fas fa-history"></i> Report History</a>
+        <div style="margin-top: auto;">
+            <button onclick="Utils.logout()" class="btn btn-secondary" style="width: 100%;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </div>
+
+    <main class="container">
+        <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2 style="font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px;">Decision Support Center</h2>
+                <p style="color: var(--text-gray); font-size: 0.9rem;">AI-Powered Governance Intelligence &amp; Preventive Actions.</p>
+            </div>
+        </header>
+
+        <div id="noData" class="empty-state" style="display: none;">
+            <i class="fas fa-brain"></i>
+            <p>No decision insights available. Real-time governance recommendations will populate once complaints are registered.</p>
+        </div>
+
+        <div id="decisionContent">
+
+            <!-- ══════════════════════════════════════════════════════════
+                 SECTION: Authority Action Queue  (NEW v2.0)
+                 ══════════════════════════════════════════════════════════ -->
+            <div class="glass-card action-queue-card"
+                 style="padding: 1.5rem; margin-bottom: 2rem; border-left: 4px solid var(--danger);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <h3 style="font-size:1.1rem; font-weight:700; margin:0;">
+                        <i class="fas fa-gavel" style="color:var(--danger); margin-right:0.5rem;"></i>
+                        Authority Action Queue
+                    </h3>
+                    <span class="badge badge-high" id="aqCount" style="font-size:0.8rem; padding:0.35rem 0.75rem;">
+                        <i class="fas fa-spinner fa-spin" style="margin-right:0.3rem;"></i> Loading…
+                    </span>
+                </div>
+
+                <div style="overflow-x:auto;">
+                    <table id="actionQueueTable">
+                        <thead>
+                            <tr>
+                                <th>Ref ID</th>
+                                <th>Area / Ward</th>
+                                <th>Issue</th>
+                                <th>Severity</th>
+                                <th>Days Open</th>
+                                <th>Lifecycle</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="aqBody">
+                            <tr>
+                                <td colspan="7" class="queue-empty">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    Fetching queue…
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Grid for Priority Wards & Alerts -->
+            <div class="grid" style="grid-template-columns: 2fr 1.2fr; margin-bottom: 2rem;">
+                <!-- Priority Wards -->
+                <div class="glass-card" style="padding: 1.5rem;">
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem;"><i class="fas fa-list-ol" style="margin-right: 0.5rem; color: var(--secondary);"></i>Top Priority Wards</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;" id="priorityWardsList">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Critical Alerts Panel -->
+                <div class="glass-card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;"><i class="fas fa-exclamation-circle" style="margin-right: 0.5rem; color: var(--danger);"></i>Critical Security Alerts</h3>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;" id="criticalAlertsPanel">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    <div style="margin-top: 1.5rem;">
+                        <a href="management.html" class="btn btn-primary" style="width: 100%; justify-content: center; font-size: 0.85rem;"><i class="fas fa-shield-alt"></i> Deploy Actions</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommended Government Actions -->
+            <div class="glass-card" style="padding: 1.5rem; margin-bottom: 2rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem;"><i class="fas fa-tasks" style="margin-right: 0.5rem; color: var(--accent);"></i>Recommended Government Actions</h3>
+                <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;" id="govActionsGrid">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Resource Allocation Matrix -->
+            <div class="glass-card" style="padding: 1.5rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem;"><i class="fas fa-users-cog" style="margin-right: 0.5rem; color: var(--primary);"></i>Response Force Deployment Matrix</h3>
+                <table id="matrixTable">
+                    <thead>
+                        <tr>
+                            <th>Ward Name</th>
+                            <th>Dominant Concern</th>
+                            <th>Recommended Team</th>
+                            <th>Incident Load</th>
+                            <th>Recommended Deployment Mode</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matrixTableBody">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+        </div><!-- /#decisionContent -->
+    </main>
+
+    <script src="admin-utils.js"></script>
+    <script>
+        if (!Utils.getAdmin()) window.location.href = 'login.html';
+
+        /* ══════════════════════════════════════════════════════════════
+           Authority Action Queue
+           ══════════════════════════════════════════════════════════════ */
+        async function loadActionQueue() {
+            try {
+                const [complaints, data] = await Promise.all([
+                    Utils.get('/complaints'),
+                    Utils.get('/analytics')
+                ]);
+
+                const queue = complaints
+                    .filter(c => c.status !== 'Resolved')
+                    .map(c => ({
+                        ...c,
+                        daysOpen: Math.floor((Date.now() - new Date(c.timestamp)) / 86400000),
+                        areaRisk: (data.health_data && data.health_data[c.location])
+                            ? (100 - data.health_data[c.location].score)
+                            : 0
+                    }))
+                    .sort((a, b) => {
+                        // High severity first
+                        if (a.severity === 'High' && b.severity !== 'High') return -1;
+                        if (b.severity === 'High' && a.severity !== 'High') return 1;
+                        // Then oldest first
+                        return b.daysOpen - a.daysOpen;
+                    })
+                    .slice(0, 10);
+
+                const countBadge = document.getElementById('aqCount');
+                countBadge.innerHTML = `${queue.length} Item${queue.length !== 1 ? 's' : ''}`;
+
+                const body = document.getElementById('aqBody');
+
+                if (queue.length === 0) {
+                    body.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="queue-empty">
+                                <i class="fas fa-check-circle"></i>
+                                No unresolved complaints requiring authority action.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                body.innerHTML = queue.map(c => {
+                    const badgeClass  = c.severity === 'High' ? 'badge-high' : c.severity === 'Medium' ? 'badge-pending' : 'badge-resolved';
+                    const daysColor   = c.daysOpen > 7 ? 'var(--danger)' : 'var(--text-gray)';
+                    const lifecycle   = c.lifecycle_status || 'Submitted';
+                    const lifecycleIcon = getLifecycleIcon(lifecycle);
+                    return `
+                        <tr>
+                            <td><code>${c.reference || 'PTP-' + c.complaint_id}</code></td>
+                            <td>${c.location || '—'}</td>
+                            <td style="max-width:160px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.issue_type || '—'}</td>
+                            <td><span class="badge ${badgeClass}">${c.severity || '—'}</span></td>
+                            <td>
+                                <span style="font-weight:700; color:${daysColor}; display:flex; align-items:center; gap:0.25rem;">
+                                    ${c.daysOpen > 7 ? '<i class="fas fa-exclamation-circle" style="font-size:0.75rem;"></i>' : ''}
+                                    ${c.daysOpen}d
+                                </span>
+                            </td>
+                            <td>
+                                <span style="font-size:0.8rem; color:var(--text-gray);">
+                                    ${lifecycleIcon} ${lifecycle}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn-escalate"
+                                        id="esc-btn-${c.complaint_id}"
+                                        onclick="escalateFromQueue(${c.complaint_id}, this)"
+                                        ${lifecycle === 'Escalated' ? 'disabled title="Already escalated"' : ''}>
+                                    <i class="fas fa-angle-double-up"></i>
+                                    ${lifecycle === 'Escalated' ? 'Escalated' : 'Escalate'}
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Failed to load action queue:', err);
+                document.getElementById('aqBody').innerHTML = `
+                    <tr>
+                        <td colspan="7" class="queue-empty">
+                            <i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i>
+                            Failed to load queue. Check API connectivity.
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('aqCount').textContent = 'Error';
+            }
+        }
+
+        function getLifecycleIcon(status) {
+            const icons = {
+                'Submitted':   '<i class="fas fa-inbox" style="color:#6366f1;"></i>',
+                'Verified':    '<i class="fas fa-check" style="color:#10b981;"></i>',
+                'Escalated':   '<i class="fas fa-angle-double-up" style="color:#ef4444;"></i>',
+                'In Progress': '<i class="fas fa-cog fa-spin" style="color:#f59e0b;"></i>',
+                'Resolved':    '<i class="fas fa-check-circle" style="color:#10b981;"></i>',
+                'Archived':    '<i class="fas fa-archive" style="color:#6b7280;"></i>',
+            };
+            return icons[status] || '<i class="fas fa-circle" style="color:#6b7280;"></i>';
+        }
+
+        async function escalateFromQueue(id, btnEl) {
+            if (btnEl) {
+                btnEl.disabled = true;
+                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Escalating…';
+            }
+            try {
+                await Utils.patch('/complaints/lifecycle', { complaint_id: id, lifecycle_status: 'Escalated' });
+                // Refresh both sections
+                await Promise.all([initDecisionCenter(), loadActionQueue()]);
+            } catch (err) {
+                console.error('Escalation failed:', err);
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = '<i class="fas fa-angle-double-up"></i> Escalate';
+                }
+                alert('Escalation failed. Please try again.');
+            }
+        }
+
+        /* ══════════════════════════════════════════════════════════════
+           Main Decision Center Initialisation
+           ══════════════════════════════════════════════════════════════ */
+        async function initDecisionCenter() {
+            const data       = await Utils.get('/analytics');
+            const complaints = await Utils.get('/complaints');
+
+            if (!data.total || data.total === 0) {
+                document.getElementById('noData').style.display = 'block';
+                document.getElementById('decisionContent').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('noData').style.display = 'none';
+            document.getElementById('decisionContent').style.display = 'block';
+
+            // 1. Process Priority Wards (ranked by risk score desc / health score asc)
+            const sortedWards = Object.entries(data.health_data)
+                .map(([name, info]) => ({ name, score: info.score, risk: info.risk, total: info.total }))
+                .sort((a, b) => a.score - b.score); // Lower health = higher priority
+
+            const pWardsList = document.getElementById('priorityWardsList');
+            pWardsList.innerHTML = '';
+
+            sortedWards.slice(0, 5).forEach((w, index) => {
+                let badgeClass = 'badge-resolved';
+                let cardBorder = 'var(--success)';
+                if (w.risk === 'Critical') {
+                    badgeClass = 'badge-high';
+                    cardBorder = 'var(--danger)';
+                } else if (w.risk === 'Moderate') {
+                    badgeClass = 'badge-pending';
+                    cardBorder = 'var(--warning)';
+                }
+
+                // Identify top issue type for this ward
+                const wardIssues = complaints.filter(c => c.location === w.name);
+                const counts = {};
+                wardIssues.forEach(wi => counts[wi.issue_type] = (counts[wi.issue_type] || 0) + 1);
+                const topIssue = Object.keys(counts).length > 0
+                    ? Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b)
+                    : 'None';
+
+                pWardsList.innerHTML += `
+                    <div class="decision-card" style="--accent-color: ${cardBorder}; padding: 1rem;">
+                        <div class="decision-card-header">
+                            <span class="decision-card-title">
+                                <span style="background: rgba(255,255,255,0.1); width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; margin-right: 0.5rem;">${index + 1}</span>
+                                ${w.name}
+                            </span>
+                            <span class="badge ${badgeClass}">${w.risk} Risk</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-gray);">
+                            <span>Health Score: <strong style="color: white;">${w.score}%</strong></span>
+                            <span>Incident Load: <strong style="color: white;">${w.total} active files</strong></span>
+                            <span>Primary Issue: <strong style="color: white;">${topIssue}</strong></span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // 2. Critical Security Alerts
+            const alertsPanel = document.getElementById('criticalAlertsPanel');
+            alertsPanel.innerHTML = '';
+            const criticalWards = sortedWards.filter(w => w.risk === 'Critical');
+
+            if (criticalWards.length > 0) {
+                criticalWards.forEach(w => {
+                    alertsPanel.innerHTML += `
+                        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 1rem; border-radius: 0.75rem; display: flex; gap: 0.75rem;">
+                            <i class="fas fa-exclamation-triangle" style="color: var(--danger); font-size: 1.2rem; margin-top: 0.15rem;"></i>
+                            <div>
+                                <div style="font-weight: 700; color: white;">Critical Risk: ${w.name}</div>
+                                <p style="font-size: 0.8rem; color: var(--text-gray); margin-top: 0.25rem;">Health index dropped below 60% (${w.score}%). Urgent structural deployment needed.</p>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                alertsPanel.innerHTML = `
+                    <div style="text-align: center; padding: 2rem 0; color: var(--text-gray);">
+                        <i class="fas fa-shield-alt" style="color: var(--success); font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
+                        All areas within acceptable risk parameters.
+                    </div>
+                `;
+            }
+
+            // 3. Recommended Government Actions Grid
+            const actionsGrid = document.getElementById('govActionsGrid');
+            actionsGrid.innerHTML = '';
+
+            const hasWater       = complaints.some(c => c.issue_type === 'Water Contamination');
+            const hasSanitation  = complaints.some(c => c.issue_type === 'Sanitation');
+            const hasDrainage    = complaints.some(c => c.issue_type === 'Drainage Overflow');
+            const hasHighPending = data.pending_critical > 0;
+
+            if (hasWater) {
+                actionsGrid.innerHTML += `
+                    <div class="decision-card" style="--accent-color: var(--primary);">
+                        <div class="decision-card-title"><i class="fas fa-tint" style="color: var(--primary);"></i> Deploy Water Quality testing</div>
+                        <p class="decision-card-desc">Water quality checks required. Coordinate testing team to verify groundwater pipelines in affected areas.</p>
+                        <div class="decision-action-list">
+                            <div class="decision-action-item"><i class="fas fa-chevron-right"></i> <span>Conduct chlorine levels verification</span></div>
+                            <div class="decision-action-item"><i class="fas fa-chevron-right"></i> <span>Initiate Ward-level pipeline inspections</span></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (hasSanitation) {
+                actionsGrid.innerHTML += `
+                    <div class="decision-card" style="--accent-color: var(--secondary);">
+                        <div class="decision-card-title"><i class="fas fa-trash-alt" style="color: var(--secondary);"></i> Municipal Deep Cleaning</div>
+                        <p class="decision-card-desc">Execute cleanups in hotspot zones. Adjust waste collection patterns to prevent debris pileups.</p>
+                        <div class="decision-action-list">
+                            <div class="decision-action-item"><i class="fas fa-chevron-right"></i> <span>Redeploy trash skips to overflowing areas</span></div>
+                            <div class="decision-action-item"><i class="fas fa-chevron-right"></i> <span>Increase weekly disposal collection rate</span></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (hasDrainage) {
+                actionsGrid.innerHTML += `
+                    <div class="decision-card" style="--accent-color: var(--accent);">
+                        <div class="decision-card-title"><i class="fas fa-water" style="color: var(--accent);"></i> Pre-Monsoon Clearing</div>
+                        <p class="decision-card-desc">Clear silt and blockage from major storm conduits. Prevent public sanitation backup hazards.</p>
+                        <div class="decision-action-list">
+                            <div class="decision-action-item"><i class="fas fa-chevron-right"></i> <span>Inspect drain channels for blockage</span></div>
+                            <div class="decision-action-item"><i class="fas fa-chevron-right"></i> <span>Clear stagnant water pools</span></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (hasHighPending) {
+                actionsGrid.innerHTML += `
+                    <div class="decision-card" style="--accent-color: var(--danger);">
+                        <div class="decision-card-title"><i class="fas fa-fire-extinguisher" style="color: var(--danger);"></i> Emergency Response Action</div>
+                        <p class="decision-card-desc">Direct attention to resolving long-standing high priority backlogs.</p>
+                        <div class="decision-action-list">
+                            <div class="decision-action-item"><i class="fas fa-chevron-right"></i> <span>Delegate teams to Pending Critical cases</span></div>
+                            <div class="decision-action-item"><i class="fas fa-chevron-right"></i> <span>Track operational performance reports</span></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Always show community awareness card
+            actionsGrid.innerHTML += `
+                <div class="decision-card" style="--accent-color: var(--warning);">
+                    <div class="decision-card-title"><i class="fas fa-bullhorn" style="color: var(--warning);"></i> Awareness Campaigns</div>
+                    <p class="decision-card-desc">Publish guidelines for local sanitation and water boiling tips to lower contamination risk.</p>
+                    <div class="decision-action-list">
+                        <div class="decision-action-item"><i class="fas fa-chevron-right"></i> <span>Distribute public flyers and ward notices</span></div>
+                    </div>
+                </div>
+            `;
+
+            // 4. Resource Allocation Matrix
+            const matrixBody = document.getElementById('matrixTableBody');
+            matrixBody.innerHTML = '';
+
+            Object.entries(data.health_data).forEach(([area, info]) => {
+                const wardIssues = complaints.filter(c => c.location === area);
+                const counts = {};
+                wardIssues.forEach(wi => counts[wi.issue_type] = (counts[wi.issue_type] || 0) + 1);
+
+                let dominant = 'None';
+                let recTeam  = 'General Inspection';
+                let mode     = 'Standard Watch';
+
+                if (wardIssues.length > 0) {
+                    dominant = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+                    if (dominant === 'Water Contamination') {
+                        recTeam = 'Water Quality Unit';
+                        mode    = info.risk === 'Critical' ? '🚨 EMERGENCY DISPATCH' : 'Scheduled Testing';
+                    } else if (dominant === 'Drainage Overflow') {
+                        recTeam = 'Drainage Maintenance';
+                        mode    = info.risk === 'Critical' ? '🚨 URGENT CLEARANCE' : 'Scheduled Inspection';
+                    } else if (dominant === 'Sanitation') {
+                        recTeam = 'Sanitation Brigade';
+                        mode    = info.risk === 'Critical' ? '🚨 INTENSIVE CLEARING' : 'Standard Routine Sweep';
+                    }
+                }
+
+                matrixBody.innerHTML += `
+                    <tr>
+                        <td><strong>${area}</strong></td>
+                        <td>${dominant}</td>
+                        <td><span style="font-weight: 600;"><i class="fas fa-hard-hat" style="margin-right: 0.25rem; font-size: 0.8rem;"></i>${recTeam}</span></td>
+                        <td>${info.total} files logged</td>
+                        <td><span class="badge ${info.risk === 'Critical' ? 'badge-high' : 'badge-pending'}">${mode}</span></td>
+                    </tr>
+                `;
+            });
+
+            // Load Action Queue after main data is ready
+            await loadActionQueue();
+        }
+
+        initDecisionCenter();
+    </script>
+</body>
+</html>

@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Complaints | PingThePanchayat</title>
+    <meta name="description" content="Track all your submitted civic complaints, their status, and reference numbers on PingThePanchayat.">
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* ── Navigation ── */
+        .user-nav { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 5%; background: rgba(15,23,42,0.9); backdrop-filter: blur(20px); border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 200; }
+        .user-nav-links { display: flex; gap: 1.5rem; align-items: center; }
+        .user-nav-links a { color: var(--text-gray); text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: color 0.2s; padding: 0.4rem 0.75rem; border-radius: 0.5rem; }
+        .user-nav-links a:hover, .user-nav-links a.active { color: white; background: rgba(255,255,255,0.06); }
+        .notif-bell { position: relative; background: none; border: none; color: var(--text-gray); font-size: 1.15rem; cursor: pointer; padding: 0.4rem 0.6rem; border-radius: 0.5rem; transition: all 0.2s; }
+        .notif-bell:hover { color: white; background: rgba(255,255,255,0.06); }
+        .notif-badge { position: absolute; top: 0; right: 0; background: var(--danger); color: white; font-size: 0.6rem; font-weight: 700; min-width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg-dark); }
+
+        /* ── Page Header ── */
+        .page-header { padding: 2.5rem 0 1rem; }
+        .page-header h1 { font-size: 2rem; font-weight: 800; }
+        .page-header p { color: var(--text-gray); margin-top: 0.5rem; }
+        .breadcrumb { display: flex; align-items: center; gap: 0.5rem; font-size: 0.83rem; color: var(--text-gray); margin-bottom: 0.5rem; }
+        .breadcrumb a { color: var(--text-gray); text-decoration: none; }
+        .breadcrumb a:hover { color: white; }
+
+        /* ── Stats Row ── */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+        .stat-mini { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 1rem; padding: 1.25rem; text-align: center; transition: transform 0.2s, box-shadow 0.2s; }
+        .stat-mini:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+        .stat-mini-val { font-size: 2rem; font-weight: 800; }
+        .stat-mini-lbl { font-size: 0.78rem; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.25rem; }
+        @media (max-width: 600px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+
+        /* ── Filter Bar ── */
+        .filter-bar { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.5rem; align-items: center; }
+        .filter-btn { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 2rem; padding: 0.38rem 1rem; font-size: 0.8rem; font-weight: 600; color: var(--text-gray); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .filter-btn:hover, .filter-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+        .search-box { position: relative; margin-left: auto; }
+        .search-box input { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 2rem; padding: 0.4rem 1rem 0.4rem 2.25rem; color: white; font-size: 0.83rem; width: 200px; outline: none; }
+        .search-box input:focus { border-color: var(--primary); }
+        .search-box i { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-gray); font-size: 0.8rem; }
+
+        /* ── Complaint Card ── */
+        .complaint-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 1.25rem; padding: 1.5rem; margin-bottom: 1rem; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+        .complaint-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.25); }
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem; }
+        .card-ref { font-family: monospace; font-size: 0.85rem; color: var(--primary); font-weight: 700; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); padding: 0.2rem 0.65rem; border-radius: 0.4rem; }
+        .card-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+        .card-type { font-size: 1.05rem; font-weight: 700; margin: 0.75rem 0 0.25rem; }
+        .card-location { font-size: 0.85rem; color: var(--text-gray); display: flex; align-items: center; gap: 0.4rem; }
+        .card-desc { font-size: 0.875rem; color: var(--text-gray); margin-top: 0.5rem; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border); }
+        .card-date { font-size: 0.78rem; color: var(--text-gray); }
+        .card-admin-notes { margin-top: 0.75rem; padding: 0.75rem; background: rgba(99,102,241,0.06); border-left: 3px solid var(--primary); border-radius: 0 0.5rem 0.5rem 0; font-size: 0.83rem; }
+        .card-admin-notes strong { color: var(--primary); font-size: 0.75rem; text-transform: uppercase; }
+
+        /* ── Lifecycle Badge ── */
+        .lifecycle-badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; font-weight: 700; padding: 0.18rem 0.6rem; border-radius: 2rem; letter-spacing: 0.3px; text-transform: uppercase; }
+        .lc-submitted  { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); }
+        .lc-verified   { background: rgba(16,185,129,0.12); color: var(--accent); border: 1px solid rgba(16,185,129,0.3); }
+        .lc-escalated  { background: rgba(245,158,11,0.12); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
+        .lc-in-progress{ background: rgba(99,102,241,0.12); color: var(--primary); border: 1px solid rgba(99,102,241,0.3); }
+        .lc-resolved   { background: rgba(16,185,129,0.15); color: var(--accent); border: 1px solid rgba(16,185,129,0.35); }
+        .lc-archived   { background: rgba(236,72,153,0.12); color: var(--secondary); border: 1px solid rgba(236,72,153,0.3); }
+
+        /* ── Report ID Tag ── */
+        .report-tag { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--secondary); background: rgba(236,72,153,0.08); border: 1px solid rgba(236,72,153,0.25); border-radius: 0.4rem; padding: 0.18rem 0.55rem; font-weight: 600; }
+
+        /* ── 6-Stage Progress Bar ── */
+        .progress-bar-wrap { margin-top: 1rem; }
+        .progress-steps { display: flex; align-items: flex-start; }
+        .progress-step { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; }
+        .progress-dot { width: 1.35rem; height: 1.35rem; border-radius: 50%; border: 2px solid var(--glass-border); background: var(--bg-dark); transition: all 0.35s; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; flex-shrink: 0; }
+        .progress-dot.done    { background: var(--accent); border-color: var(--accent); color: white; }
+        .progress-dot.current { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 0 0 3px rgba(99,102,241,0.25), 0 0 12px rgba(99,102,241,0.5); animation: pulseRing 1.8s infinite; }
+        .progress-dot.escalated-dot { background: var(--warning); border-color: var(--warning); color: white; box-shadow: 0 0 0 3px rgba(245,158,11,0.25), 0 0 12px rgba(245,158,11,0.5); animation: pulseRingWarn 1.8s infinite; }
+        @keyframes pulseRing { 0%,100%{box-shadow:0 0 0 3px rgba(99,102,241,0.25),0 0 10px rgba(99,102,241,0.4)} 50%{box-shadow:0 0 0 6px rgba(99,102,241,0.15),0 0 18px rgba(99,102,241,0.6)} }
+        @keyframes pulseRingWarn { 0%,100%{box-shadow:0 0 0 3px rgba(245,158,11,0.25),0 0 10px rgba(245,158,11,0.4)} 50%{box-shadow:0 0 0 6px rgba(245,158,11,0.15),0 0 18px rgba(245,158,11,0.6)} }
+        .progress-connector { flex: 1; height: 2px; background: var(--glass-border); margin-top: 0.65rem; transition: background 0.35s; flex-shrink: 0; }
+        .progress-connector.done { background: var(--accent); }
+        .progress-label { font-size: 0.6rem; color: var(--text-gray); margin-top: 0.3rem; text-align: center; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 2px; }
+        .progress-label.active-label { color: var(--primary); font-weight: 700; }
+        .progress-label.done-label   { color: var(--accent); }
+        .progress-label.warn-label   { color: var(--warning); font-weight: 700; }
+
+        /* ── Escalation Banner ── */
+        .escalation-banner { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 0.5rem; padding: 0.5rem 0.75rem; margin-top: 0.5rem; font-size: 0.8rem; color: var(--warning); display: flex; align-items: center; gap: 0.5rem; }
+
+        /* ── Detail Modal ── */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+        .modal-box { background: rgba(15,23,42,0.98); border: 1px solid var(--glass-border); border-radius: 1.5rem; padding: 2.5rem; max-width: 580px; width: 90%; max-height: 82vh; overflow-y: auto; transform: scale(0.9); transition: transform 0.3s; }
+        .modal-overlay.open .modal-box { transform: scale(1); }
+        .detail-row { display: flex; justify-content: space-between; padding: 0.65rem 0; border-bottom: 1px solid var(--glass-border); font-size: 0.875rem; }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-label { color: var(--text-gray); }
+        .detail-value { font-weight: 600; text-align: right; max-width: 60%; }
+
+        /* ── Toast ── */
+        #toast { position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.75rem; }
+        .toast-item { display: flex; align-items: center; gap: 0.75rem; background: rgba(15,23,42,0.95); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 1rem 1.25rem; min-width: 280px; max-width: 360px; backdrop-filter: blur(20px); box-shadow: 0 8px 25px rgba(0,0,0,0.4); animation: slideInRight 0.3s ease; }
+        .toast-item.success { border-left: 4px solid var(--accent); }
+        .toast-item.error   { border-left: 4px solid var(--danger); }
+        .toast-item.info    { border-left: 4px solid var(--primary); }
+        .toast-icon { font-size: 1.1rem; }
+        .toast-item.success .toast-icon { color: var(--accent); }
+        .toast-item.error   .toast-icon { color: var(--danger); }
+        .toast-item.info    .toast-icon { color: var(--primary); }
+        .toast-msg { font-size: 0.875rem; flex: 1; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* ── Notification Dropdown ── */
+        .notif-dropdown { position: absolute; top: 3.5rem; right: 0; width: 340px; background: rgba(15,23,42,0.98); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 500; display: none; }
+        .notif-dropdown.open { display: block; }
+        .notif-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
+        .notif-list { max-height: 320px; overflow-y: auto; }
+        .notif-item { padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--glass-border); transition: background 0.2s; }
+        .notif-item:hover { background: rgba(255,255,255,0.03); }
+        .notif-item:last-child { border-bottom: none; }
+        .notif-title { font-size: 0.83rem; font-weight: 700; }
+        .notif-msg  { font-size: 0.78rem; color: var(--text-gray); margin-top: 0.2rem; }
+        .notif-time { font-size: 0.7rem;  color: var(--text-gray); margin-top: 0.3rem; }
+        .notif-unread { background: rgba(99,102,241,0.05); border-left: 3px solid var(--primary); }
+        .notif-container { position: relative; }
+
+        /* ── Feedback Modal ── */
+        .feedback-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 2000; align-items: center; justify-content: center; }
+        .feedback-modal.open { display: flex; }
+        .feedback-box { background: rgba(15,23,42,0.98); border: 1px solid var(--glass-border); border-radius: 1.5rem; padding: 2rem; max-width: 480px; width: 92%; animation: scaleIn 0.25s ease; }
+        @keyframes scaleIn { from { transform: scale(0.9); opacity:0; } to { transform: scale(1); opacity:1; } }
+        .star-row { display: flex; gap: 0.5rem; justify-content: center; margin: 1rem 0; }
+        .star-btn { font-size: 2.2rem; cursor: pointer; transition: transform 0.15s, color 0.15s; color: rgba(255,255,255,0.2); background: none; border: none; }
+        .star-btn.selected, .star-btn:hover { color: #fbbf24; transform: scale(1.2); }
+        .fb-label { text-align: center; font-size: 0.85rem; color: var(--text-gray); min-height: 1.2em; margin-bottom: 0.5rem; }
+        .fb-comment { width: 100%; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 0.6rem; padding: 0.7rem; color: white; font-size: 0.875rem; resize: vertical; min-height: 80px; outline: none; margin-bottom: 1rem; }
+        .fb-comment:focus { border-color: var(--primary); }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="user-nav">
+        <a href="../index.html" class="logo" style="text-decoration:none;"><i class="fas fa-satellite-dish"></i> <span>Ping</span>ThePanchayat</a>
+        <div class="user-nav-links">
+            <a href="complaint.html" id="nav-complaint"><i class="fas fa-plus-circle"></i> Report Issue</a>
+            <a href="status.html" class="active" id="nav-status"><i class="fas fa-list-alt"></i> My Complaints</a>
+            <a href="contact.html" id="nav-contact"><i class="fas fa-envelope"></i> Contact</a>
+            <div class="notif-container">
+                <button class="notif-bell" onclick="toggleNotif()" id="notifBellBtn" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="notif-badge" id="notifBadge" style="display:none;"></span>
+                </button>
+                <div class="notif-dropdown" id="notifDropdown">
+                    <div class="notif-header"><span style="font-weight:700; font-size:0.9rem;">Notifications</span><button onclick="markAllRead()" style="background:none;border:none;color:var(--primary);font-size:0.78rem;cursor:pointer;">Mark all read</button></div>
+                    <div class="notif-list" id="notifList"><div style="padding:2rem; text-align:center; color:var(--text-gray); font-size:0.85rem;">No notifications yet</div></div>
+                </div>
+            </div>
+            <a href="profile.html" id="nav-profile" title="My Profile">
+                <div style="width:2rem; height:2rem; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--secondary)); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700;" id="avatarCircle">?</div>
+            </a>
+            <button onclick="Utils.logout()" class="btn btn-secondary" style="padding:0.5rem 1rem; font-size:0.85rem;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <div class="breadcrumb"><a href="../index.html">Home</a> <i class="fas fa-chevron-right"></i> <span>My Complaints</span></div>
+            <h1><i class="fas fa-history" style="color:var(--primary);"></i> My Reported Issues</h1>
+            <p>Track all complaints you've submitted with real-time lifecycle status updates</p>
+        </div>
+
+        <!-- Stats Row: Total | Active | In Progress | Resolved -->
+        <div class="stats-row">
+            <div class="stat-mini">
+                <div class="stat-mini-val" id="statTotal">—</div>
+                <div class="stat-mini-lbl">Total Filed</div>
+            </div>
+            <div class="stat-mini">
+                <div class="stat-mini-val" style="color:var(--warning);" id="statActive">—</div>
+                <div class="stat-mini-lbl">Active</div>
+            </div>
+            <div class="stat-mini">
+                <div class="stat-mini-val" style="color:var(--primary);" id="statProgress">—</div>
+                <div class="stat-mini-lbl">In Progress</div>
+            </div>
+            <div class="stat-mini">
+                <div class="stat-mini-val" style="color:var(--accent);" id="statResolved">—</div>
+                <div class="stat-mini-lbl">Resolved</div>
+            </div>
+        </div>
+
+        <!-- Filter Bar — 6 lifecycle stages + All -->
+        <div class="filter-bar">
+            <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+            <button class="filter-btn" onclick="setFilter('Submitted', this)">Submitted</button>
+            <button class="filter-btn" onclick="setFilter('Verified', this)">Verified</button>
+            <button class="filter-btn" onclick="setFilter('Escalated', this)">Escalated</button>
+            <button class="filter-btn" onclick="setFilter('In Progress', this)">In Progress</button>
+            <button class="filter-btn" onclick="setFilter('Resolved', this)">Resolved</button>
+            <button class="filter-btn" onclick="setFilter('Archived', this)">Archived</button>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search complaints..." oninput="renderComplaints()">
+            </div>
+        </div>
+
+        <!-- Complaints List -->
+        <div id="complaintsList"></div>
+
+        <!-- Empty State -->
+        <div id="emptyState" style="display:none;">
+            <div class="glass-card" style="text-align:center; padding:5rem 2rem;">
+                <i class="fas fa-clipboard-list" style="font-size:4rem; color:var(--text-gray); opacity:0.3; margin-bottom:1.5rem;"></i>
+                <h3 style="font-weight:700; margin-bottom:0.5rem;">No Complaints Found</h3>
+                <p style="color:var(--text-gray); margin-bottom:2rem;">You haven't filed any complaints matching this filter.</p>
+                <a href="complaint.html" class="btn btn-primary"><i class="fas fa-plus"></i> Report an Issue</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="detailModal" onclick="closeDetailIfBg(event)">
+        <div class="modal-box" id="detailBox"></div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div class="feedback-modal" id="feedbackModal" onclick="closeFbIfBg(event)">
+        <div class="feedback-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                <h3 style="font-size:1.15rem;font-weight:800;"><i class="fas fa-smile" style="color:#fbbf24;margin-right:0.4rem;"></i> Rate Your Experience</h3>
+                <button onclick="closeFeedbackModal()" style="background:none;border:none;color:var(--text-gray);font-size:1.25rem;cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <p id="fbComplaintRef" style="color:var(--text-gray);font-size:0.85rem;margin-bottom:0.25rem;"></p>
+            <p style="font-size:0.82rem;color:var(--text-gray);margin-bottom:0.5rem;">How satisfied are you with the resolution of your complaint?</p>
+            <div class="star-row">
+                <button class="star-btn" data-val="1" onclick="selectStar(1)">★</button>
+                <button class="star-btn" data-val="2" onclick="selectStar(2)">★</button>
+                <button class="star-btn" data-val="3" onclick="selectStar(3)">★</button>
+                <button class="star-btn" data-val="4" onclick="selectStar(4)">★</button>
+                <button class="star-btn" data-val="5" onclick="selectStar(5)">★</button>
+            </div>
+            <div class="fb-label" id="fbLabel">Tap a star to rate</div>
+            <textarea class="fb-comment" id="fbComment" placeholder="Optional: share your thoughts about the resolution..."></textarea>
+            <button class="btn btn-primary" style="width:100%;" onclick="submitFeedback()"><i class="fas fa-paper-plane"></i> Submit Feedback</button>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+    <script src="../utils.js"></script>
+    <script>
+        /* ─────────────────── Auth ─────────────────── */
+        const user = Utils.getUser();
+        if (!user) window.location.href = '../login.html';
+        else {
+            const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            document.getElementById('avatarCircle').textContent = initials;
+        }
+
+        let allComplaints = [];
+        let currentFilter = 'all';
+
+        /* ─────────────────── Toast ─────────────────── */
+        function showToast(msg, type = 'info') {
+            const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
+            const t = document.getElementById('toast');
+            const el = document.createElement('div');
+            el.className = `toast-item ${type}`;
+            el.innerHTML = `<i class="fas ${icons[type]} toast-icon"></i><span class="toast-msg">${msg}</span>`;
+            t.appendChild(el);
+            setTimeout(() => el.remove(), 5000);
+        }
+
+        /* ─────────────────── Helpers ─────────────────── */
+        function severityColor(s) {
+            return s === 'High' ? '#ef4444' : s === 'Medium' ? '#f59e0b' : '#94a3b8';
+        }
+
+        function statusIcon(s) {
+            if (s === 'Resolved') return 'fa-check-circle';
+            if (s === 'In Progress') return 'fa-spinner fa-spin';
+            return 'fa-clock';
+        }
+
+        /* ─────────────────── Lifecycle Step ─────────────────── */
+        const LIFECYCLE_STAGES = ['Submitted', 'Verified', 'Escalated', 'In Progress', 'Resolved', 'Archived'];
+
+        function getLifecycleStep(c) {
+            const ls = c.lifecycle_status || '';
+            const idx = LIFECYCLE_STAGES.indexOf(ls);
+            if (idx >= 0) return idx;
+            // Fallback from status field
+            if (c.status === 'Resolved')    return 4;
+            if (c.status === 'In Progress') return 3;
+            return 0; // default to Submitted
+        }
+
+        function getLifecycleLabel(c) {
+            const ls = c.lifecycle_status || '';
+            if (LIFECYCLE_STAGES.includes(ls)) return ls;
+            if (c.status === 'Resolved')    return 'Resolved';
+            if (c.status === 'In Progress') return 'In Progress';
+            return 'Submitted';
+        }
+
+        /* ─────────────────── Lifecycle Badge ─────────────────── */
+        function lifecycleBadge(c) {
+            const label = getLifecycleLabel(c);
+            const cls = {
+                'Submitted' : 'lc-submitted',
+                'Verified'  : 'lc-verified',
+                'Escalated' : 'lc-escalated',
+                'In Progress': 'lc-in-progress',
+                'Resolved'  : 'lc-resolved',
+                'Archived'  : 'lc-archived'
+            }[label] || 'lc-submitted';
+            const icons = {
+                'Submitted' : 'fa-paper-plane',
+                'Verified'  : 'fa-shield-alt',
+                'Escalated' : 'fa-exclamation-triangle',
+                'In Progress': 'fa-cog',
+                'Resolved'  : 'fa-check-double',
+                'Archived'  : 'fa-archive'
+            };
+            return `<span class="lifecycle-badge ${cls}"><i class="fas ${icons[label] || 'fa-circle'}"></i> ${label}</span>`;
+        }
+
+        /* ─────────────────── 6-Stage Progress Bar ─────────────────── */
+        function progressBar(c) {
+            const step = getLifecycleStep(c);
+            const isEscalated = (step === 2); // index 2 = Escalated
+
+            let html = '<div class="progress-bar-wrap"><div class="progress-steps">';
+
+            LIFECYCLE_STAGES.forEach((s, i) => {
+                const done    = i < step;
+                const current = i === step;
+                let dotClass  = '';
+                let lblClass  = 'progress-label';
+
+                if (done) {
+                    dotClass = 'done';
+                    lblClass += ' done-label';
+                } else if (current && isEscalated) {
+                    dotClass = 'escalated-dot';
+                    lblClass += ' warn-label';
+                } else if (current) {
+                    dotClass = 'current';
+                    lblClass += ' active-label';
+                }
+
+                html += `<div class="progress-step">
+                    <div class="progress-dot ${dotClass}">
+                        ${done ? '<i class="fas fa-check" style="font-size:0.5rem;"></i>' : ''}
+                        ${current && isEscalated ? '<i class="fas fa-exclamation" style="font-size:0.55rem;"></i>' : ''}
+                    </div>
+                    <div class="${lblClass}">${s}</div>
+                </div>`;
+
+                if (i < LIFECYCLE_STAGES.length - 1) {
+                    html += `<div class="progress-connector ${done ? 'done' : ''}"></div>`;
+                }
+            });
+
+            html += '</div></div>';
+            return html;
+        }
+
+        /* ─────────────────── Filter ─────────────────── */
+        function setFilter(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderComplaints();
+        }
+
+        /* ─────────────────── Render ─────────────────── */
+        function renderComplaints() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            let filtered = allComplaints.filter(c => {
+                const lcLabel  = getLifecycleLabel(c);
+                const matchFilter = currentFilter === 'all'
+                    || lcLabel === currentFilter
+                    || c.status === currentFilter;
+                const matchSearch = !search
+                    || c.issue_type.toLowerCase().includes(search)
+                    || c.location.toLowerCase().includes(search)
+                    || (c.reference && c.reference.toLowerCase().includes(search));
+                return matchFilter && matchSearch;
+            });
+
+            const list  = document.getElementById('complaintsList');
+            const empty = document.getElementById('emptyState');
+            if (filtered.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+            empty.style.display = 'none';
+
+            const isEscalatd = (c) => getLifecycleLabel(c) === 'Escalated';
+
+            list.innerHTML = filtered.map(c => {
+                const refNum = c.reference || `PTP-2026-${String(c.complaint_id).padStart(4, '0')}`;
+                const escalated = isEscalatd(c);
+
+                return `
+                <div class="complaint-card" onclick="openDetail(${c.complaint_id})">
+                    <div class="card-top">
+                        <span class="card-ref">${refNum}</span>
+                        <div class="card-badges">
+                            ${lifecycleBadge(c)}
+                            <span class="badge badge-${c.severity.toLowerCase()}">${c.severity}</span>
+                            <span class="badge badge-${c.status.toLowerCase().replace(/ /g, '-')}">
+                                <i class="fas ${statusIcon(c.status)}" style="margin-right:0.25rem;"></i>${c.status}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-type">${c.issue_type}</div>
+                    <div class="card-location"><i class="fas fa-map-marker-alt"></i> ${c.location}</div>
+                    <div class="card-desc">${c.description}</div>
+                    ${escalated ? `
+                    <div class="escalation-banner">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        This complaint has been escalated to higher authorities for urgent action.
+                    </div>` : ''}
+                    ${c.admin_notes ? `<div class="card-admin-notes"><strong><i class="fas fa-comment-dots"></i> Admin Response:</strong><div style="margin-top:0.25rem;">${c.admin_notes}</div></div>` : ''}
+                    ${progressBar(c)}
+                    <div class="card-footer">
+                        <span class="card-date"><i class="fas fa-calendar-alt" style="margin-right:0.4rem;"></i>${new Date(c.timestamp).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'})}</span>
+                        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                            ${c.assigned_team ? `<span style="font-size:0.78rem; color:var(--accent);"><i class="fas fa-users"></i> ${c.assigned_team}</span>` : ''}
+                            ${c.report_id ? `<span class="report-tag"><i class="fas fa-file-alt"></i> Included in Report: ${c.report_id}</span>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        /* ─────────────────── Detail Modal ─────────────────── */
+        function openDetail(id) {
+            const c = allComplaints.find(x => x.complaint_id === id);
+            if (!c) return;
+            const refNum = c.reference || `PTP-2026-${String(c.complaint_id).padStart(4, '0')}`;
+            const lcLabel = getLifecycleLabel(c);
+            const isResolved = lcLabel === 'Resolved' || lcLabel === 'Archived';
+
+            const resolutionSection = isResolved && c.resolution_notes ? `
+                <div style="margin-top:1rem; padding: 0.9rem 1rem; background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.25); border-radius: 0.75rem;">
+                    <div style="color:var(--success); font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-bottom:0.4rem;"><i class="fas fa-check-circle"></i> Resolution Details</div>
+                    <p style="font-size:0.875rem; line-height:1.5; color:var(--text-gray);">${c.resolution_notes}</p>
+                    ${c.resolution_date ? `<div style="font-size:0.75rem; color:var(--text-gray); margin-top:0.35rem;"><i class="fas fa-calendar-check"></i> Resolved on: <strong style="color:white;">${c.resolution_date}</strong></div>` : ''}
+                </div>` : '';
+
+            const feedbackSection = isResolved && !c.feedback_submitted ? `
+                <div style="margin-top:1.25rem; padding:1rem; background:rgba(251,191,36,0.06); border:1px solid rgba(251,191,36,0.2); border-radius:0.75rem; text-align:center;">
+                    <div style="font-size:0.85rem; font-weight:700; margin-bottom:0.5rem;"><i class="fas fa-smile" style="color:#fbbf24;"></i> Share Your Feedback</div>
+                    <p style="font-size:0.8rem; color:var(--text-gray); margin-bottom:0.75rem;">Help us improve by rating your experience with this resolution.</p>
+                    <button class="btn btn-primary" style="font-size:0.82rem; padding:0.5rem 1.25rem; background:linear-gradient(135deg,#b45309,#f59e0b);" onclick="document.getElementById('detailModal').classList.remove('open'); openFeedbackModal(${c.complaint_id}, '${refNum}');"><i class="fas fa-star"></i> Rate This Resolution</button>
+                </div>` : isResolved && c.feedback_submitted ? `
+                <div style="margin-top:1rem; padding:0.65rem 1rem; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:0.75rem; display:flex; align-items:center; gap:0.5rem;">
+                    <i class="fas fa-star" style="color:#fbbf24;"></i>
+                    <span style="font-size:0.82rem; color:var(--text-gray);">You've rated this resolution ${c.satisfaction_score ? c.satisfaction_score + '/5 stars' : ''}. Thank you!</span>
+                </div>` : '';
+
+            document.getElementById('detailBox').innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                    <h3 style="font-size:1.25rem; font-weight:800;">${c.issue_type}</h3>
+                    <button onclick="document.getElementById('detailModal').classList.remove('open')" style="background:none;border:none;color:var(--text-gray);font-size:1.25rem;cursor:pointer;"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="detail-row"><span class="detail-label">Reference ID</span><span class="detail-value" style="font-family:monospace;color:var(--primary);">${refNum}</span></div>
+                <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value"><span class="badge badge-${c.status.toLowerCase().replace(/ /g, '-')}">${c.status}</span></span></div>
+                <div class="detail-row"><span class="detail-label">Lifecycle Stage</span><span class="detail-value">${lifecycleBadge(c)}</span></div>
+                <div class="detail-row"><span class="detail-label">Severity</span><span class="detail-value"><span class="badge badge-${c.severity.toLowerCase()}">${c.severity}</span></span></div>
+                <div class="detail-row"><span class="detail-label">Location</span><span class="detail-value">${c.location}</span></div>
+                <div class="detail-row"><span class="detail-label">Filed On</span><span class="detail-value">${new Date(c.timestamp).toLocaleString('en-IN')}</span></div>
+                ${c.assigned_team ? `<div class="detail-row"><span class="detail-label">Assigned Team</span><span class="detail-value" style="color:var(--accent);">${c.assigned_team}</span></div>` : ''}
+                ${c.department ? `<div class="detail-row"><span class="detail-label">Department</span><span class="detail-value" style="color:#818cf8;">${c.department}</span></div>` : ''}
+                ${c.action_plan ? `<div class="detail-row"><span class="detail-label">Action Plan</span><span class="detail-value" style="font-size:0.82rem;">${c.action_plan}</span></div>` : ''}
+                ${c.action_deadline ? `<div class="detail-row"><span class="detail-label">Work Deadline</span><span class="detail-value">${c.action_deadline}</span></div>` : ''}
+                ${c.report_id ? `<div class="detail-row"><span class="detail-label">Report</span><span class="detail-value"><span class="report-tag"><i class="fas fa-file-alt"></i> ${c.report_id}</span></span></div>` : ''}
+                ${lcLabel === 'Escalated' ? `
+                <div class="escalation-banner" style="margin:0.5rem 0;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    This complaint has been escalated to higher authorities for urgent action.
+                </div>` : ''}
+                <div style="margin-top:1rem;">
+                    <div style="color:var(--text-gray); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.5rem;">Description</div>
+                    <p style="font-size:0.875rem; line-height:1.6;">${c.description}</p>
+                </div>
+                ${c.admin_notes ? `<div style="margin-top:1rem;"><div style="color:var(--text-gray); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.5rem;">Admin Response</div><div class="card-admin-notes" style="margin-top:0;">${c.admin_notes}</div></div>` : ''}
+                ${resolutionSection}
+                <div style="margin-top:1.25rem;">
+                    <div style="color:var(--text-gray); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.75rem;">Lifecycle Progress</div>
+                    ${progressBar(c)}
+                </div>
+                ${feedbackSection}`;
+            document.getElementById('detailModal').classList.add('open');
+        }
+
+        function closeDetailIfBg(e) {
+            if (e.target === document.getElementById('detailModal'))
+                document.getElementById('detailModal').classList.remove('open');
+        }
+
+        /* ─────────────────── Notifications ─────────────────── */
+        async function loadNotifications() {
+            try {
+                const notifs = await Utils.get(`/notifications/user/${user.user_id}`);
+                const unread = notifs.filter(n => !n.is_read);
+                const badge  = document.getElementById('notifBadge');
+                if (unread.length > 0) { badge.style.display = 'flex'; badge.textContent = unread.length > 9 ? '9+' : unread.length; }
+                else { badge.style.display = 'none'; }
+                const list = document.getElementById('notifList');
+                if (notifs.length === 0) { list.innerHTML = '<div style="padding:2rem; text-align:center; color:var(--text-gray); font-size:0.85rem;">No notifications yet</div>'; return; }
+                list.innerHTML = notifs.map(n => `
+                    <div class="notif-item ${!n.is_read ? 'notif-unread' : ''}">
+                        <div class="notif-title">${n.title}</div>
+                        <div class="notif-msg">${n.message}</div>
+                        <div class="notif-time">${new Date(n.timestamp).toLocaleString()}</div>
+                    </div>`).join('');
+            } catch {}
+        }
+
+        function toggleNotif() { document.getElementById('notifDropdown').classList.toggle('open'); }
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('notifBellBtn').contains(e.target) && !document.getElementById('notifDropdown').contains(e.target))
+                document.getElementById('notifDropdown').classList.remove('open');
+        });
+
+        async function markAllRead() {
+            await Utils.post('/notifications/read', { user_id: user.user_id });
+            document.getElementById('notifBadge').style.display = 'none';
+            loadNotifications();
+        }
+
+        /* ─────────────────── Load Complaints ─────────────────── */
+        async function loadComplaints() {
+            try {
+                const data = await Utils.get(`/complaints/user/${user.user_id}`);
+                allComplaints = data;
+
+                // Stats: Total | Active (non-resolved/archived) | In Progress | Resolved
+                const total     = data.length;
+                const resolved  = data.filter(c => getLifecycleLabel(c) === 'Resolved' || getLifecycleLabel(c) === 'Archived').length;
+                const inProg    = data.filter(c => getLifecycleLabel(c) === 'In Progress').length;
+                const active    = total - resolved; // everything that isn't resolved/archived
+
+                document.getElementById('statTotal').textContent    = total;
+                document.getElementById('statActive').textContent   = active;
+                document.getElementById('statProgress').textContent = inProg;
+                document.getElementById('statResolved').textContent = data.filter(c => getLifecycleLabel(c) === 'Resolved').length;
+
+                renderComplaints();
+            } catch {
+                showToast('Failed to load complaints. Please check the server.', 'error');
+            }
+        }
+
+        loadComplaints();
+        loadNotifications();
+
+        /* ─────────────────── Feedback Modal ─────────────────── */
+        let feedbackCid = null;
+        let feedbackRating = 0;
+
+        const FB_LABELS = { 1:'Very Dissatisfied 😞', 2:'Dissatisfied 😐', 3:'Neutral 😊', 4:'Satisfied 😃', 5:'Very Satisfied 🌟' };
+
+        function openFeedbackModal(cid, ref) {
+            feedbackCid = cid;
+            feedbackRating = 0;
+            document.getElementById('fbComplaintRef').textContent = ref;
+            document.getElementById('fbComment').value = '';
+            document.getElementById('fbLabel').textContent = 'Tap a star to rate';
+            document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById('feedbackModal').classList.add('open');
+        }
+
+        function closeFeedbackModal() {
+            document.getElementById('feedbackModal').classList.remove('open');
+        }
+
+        function closeFbIfBg(e) {
+            if (e.target === document.getElementById('feedbackModal')) closeFeedbackModal();
+        }
+
+        function selectStar(val) {
+            feedbackRating = val;
+            document.querySelectorAll('.star-btn').forEach(b => {
+                b.classList.toggle('selected', parseInt(b.dataset.val) <= val);
+            });
+            document.getElementById('fbLabel').textContent = FB_LABELS[val] || '';
+        }
+
+        async function submitFeedback() {
+            if (!feedbackRating) { showToast('Please select a star rating', 'error'); return; }
+            try {
+                const res = await Utils.post('/feedback', {
+                    complaint_id: feedbackCid,
+                    user_id: user.user_id,
+                    rating: feedbackRating,
+                    comment: document.getElementById('fbComment').value.trim()
+                });
+                closeFeedbackModal();
+                showToast(`Thank you! Feedback submitted: ${res.label || ''}`, 'success');
+                loadComplaints(); // refresh to update feedback_submitted flag
+            } catch(e) {
+                showToast('Failed to submit feedback. Please try again.', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

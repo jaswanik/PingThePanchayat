@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | PingThePanchayat</title>
+    <meta name="description" content="Manage your PingThePanchayat citizen profile, change password, and update security settings.">
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .user-nav { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 5%; background: rgba(15,23,42,0.9); backdrop-filter: blur(20px); border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 200; }
+        .user-nav-links { display: flex; gap: 1.5rem; align-items: center; }
+        .user-nav-links a { color: var(--text-gray); text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: color 0.2s; padding: 0.4rem 0.75rem; border-radius: 0.5rem; }
+        .user-nav-links a:hover, .user-nav-links a.active { color: white; background: rgba(255,255,255,0.06); }
+        .notif-bell { position: relative; background: none; border: none; color: var(--text-gray); font-size: 1.15rem; cursor: pointer; padding: 0.4rem 0.6rem; border-radius: 0.5rem; transition: all 0.2s; }
+        .notif-bell:hover { color: white; background: rgba(255,255,255,0.06); }
+        .notif-badge { position: absolute; top: 0; right: 0; background: var(--danger); color: white; font-size: 0.6rem; font-weight: 700; min-width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg-dark); }
+
+        .page-header { padding: 2.5rem 0 1rem; }
+        .page-header h1 { font-size: 2rem; font-weight: 800; }
+        .page-header p { color: var(--text-gray); margin-top: 0.5rem; }
+        .breadcrumb { display: flex; align-items: center; gap: 0.5rem; font-size: 0.83rem; color: var(--text-gray); margin-bottom: 0.5rem; }
+        .breadcrumb a { color: var(--text-gray); text-decoration: none; }
+        .breadcrumb a:hover { color: white; }
+
+        .profile-grid { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; }
+        @media (max-width: 900px) { .profile-grid { grid-template-columns: 1fr; } }
+
+        /* Sidebar card */
+        .profile-sidebar { display: flex; flex-direction: column; gap: 1.25rem; }
+        .avatar-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 1.5rem; padding: 2rem; text-align: center; }
+        .avatar-circle { width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; margin: 0 auto 1.25rem; box-shadow: 0 0 30px rgba(99,102,241,0.4); }
+        .avatar-name { font-size: 1.25rem; font-weight: 800; }
+        .avatar-email { font-size: 0.83rem; color: var(--text-gray); margin-top: 0.3rem; }
+        .avatar-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); border-radius: 2rem; padding: 0.25rem 0.85rem; font-size: 0.75rem; color: var(--accent); font-weight: 700; margin-top: 1rem; }
+
+        .profile-menu { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 1.25rem; overflow: hidden; }
+        .profile-menu-item { display: flex; align-items: center; gap: 0.9rem; padding: 0.9rem 1.25rem; color: var(--text-gray); font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border-bottom: 1px solid var(--glass-border); }
+        .profile-menu-item:last-child { border-bottom: none; }
+        .profile-menu-item:hover, .profile-menu-item.active { background: rgba(255,255,255,0.05); color: white; }
+        .profile-menu-item.active { color: var(--primary); border-left: 3px solid var(--primary); padding-left: calc(1.25rem - 3px); }
+        .profile-menu-item i { width: 1.25rem; text-align: center; }
+
+        /* Tabs content */
+        .profile-tab { display: none; }
+        .profile-tab.active { display: block; }
+
+        .section-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 1.5rem; padding: 2rem; margin-bottom: 1.5rem; }
+        .section-card-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.6rem; }
+        .section-card-desc { font-size: 0.83rem; color: var(--text-gray); margin-bottom: 1.75rem; }
+
+        .input-group { position: relative; }
+        .input-group .input-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-gray); font-size: 0.9rem; pointer-events: none; }
+        .input-group input, .input-group select { padding-left: 2.75rem; }
+        .input-group .toggle-pw { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-gray); cursor: pointer; }
+
+        .info-field { display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 0; border-bottom: 1px solid var(--glass-border); }
+        .info-field:last-child { border-bottom: none; }
+        .info-label { font-size: 0.8rem; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-value { font-size: 0.9rem; font-weight: 600; }
+
+        .pw-strength { height: 4px; border-radius: 2px; margin-top: 0.5rem; transition: all 0.3s; background: var(--glass-border); }
+        .pw-strength-bar { height: 100%; border-radius: 2px; transition: all 0.4s; }
+        .pw-hint { font-size: 0.78rem; color: var(--text-gray); margin-top: 0.3rem; }
+
+        .danger-zone { background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2); border-radius: 1rem; padding: 1.5rem; }
+        .danger-title { color: var(--danger); font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .danger-desc { font-size: 0.83rem; color: var(--text-gray); margin-bottom: 1rem; }
+
+        /* Stat item for Security tab */
+        .security-item { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 0.75rem; margin-bottom: 0.75rem; }
+        .security-item-icon { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+        .security-item-body h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.2rem; }
+        .security-item-body p { font-size: 0.8rem; color: var(--text-gray); }
+        .security-status { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 2rem; margin-top: 0.4rem; }
+        .status-set { background: rgba(16,185,129,0.12); color: var(--accent); }
+        .status-notset { background: rgba(245,158,11,0.12); color: var(--warning); }
+
+        /* Toast */
+        #toast { position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.75rem; }
+        .toast-item { display: flex; align-items: center; gap: 0.75rem; background: rgba(15,23,42,0.95); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 1rem 1.25rem; min-width: 280px; max-width: 360px; backdrop-filter: blur(20px); box-shadow: 0 8px 25px rgba(0,0,0,0.4); animation: slideInRight 0.3s ease; }
+        .toast-item.success { border-left: 4px solid var(--accent); }
+        .toast-item.error { border-left: 4px solid var(--danger); }
+        .toast-item.info { border-left: 4px solid var(--primary); }
+        .toast-icon { font-size: 1.1rem; }
+        .toast-item.success .toast-icon { color: var(--accent); }
+        .toast-item.error .toast-icon { color: var(--danger); }
+        .toast-item.info .toast-icon { color: var(--primary); }
+        .toast-msg { font-size: 0.875rem; flex: 1; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .btn-loading { opacity: 0.7; pointer-events: none; }
+        .spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        select option { background: #0f172a; color: white; }
+
+        /* Notification Dropdown */
+        .notif-dropdown { position: absolute; top: 3.5rem; right: 0; width: 340px; background: rgba(15,23,42,0.98); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 500; display: none; }
+        .notif-dropdown.open { display: block; }
+        .notif-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
+        .notif-list { max-height: 320px; overflow-y: auto; }
+        .notif-item { padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--glass-border); transition: background 0.2s; }
+        .notif-item:hover { background: rgba(255,255,255,0.03); }
+        .notif-item:last-child { border-bottom: none; }
+        .notif-title { font-size: 0.83rem; font-weight: 700; }
+        .notif-msg { font-size: 0.78rem; color: var(--text-gray); margin-top: 0.2rem; }
+        .notif-time { font-size: 0.7rem; color: var(--text-gray); margin-top: 0.3rem; }
+        .notif-unread { background: rgba(99,102,241,0.05); border-left: 3px solid var(--primary); }
+        .notif-container { position: relative; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="user-nav">
+        <a href="../index.html" class="logo" style="text-decoration:none;"><i class="fas fa-satellite-dish"></i> <span>Ping</span>ThePanchayat</a>
+        <div class="user-nav-links">
+            <a href="complaint.html" id="nav-complaint"><i class="fas fa-plus-circle"></i> Report Issue</a>
+            <a href="status.html" id="nav-status"><i class="fas fa-list-alt"></i> My Complaints</a>
+            <a href="contact.html" id="nav-contact"><i class="fas fa-envelope"></i> Contact</a>
+            <div class="notif-container">
+                <button class="notif-bell" onclick="toggleNotif()" id="notifBellBtn" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="notif-badge" id="notifBadge" style="display:none;"></span>
+                </button>
+                <div class="notif-dropdown" id="notifDropdown">
+                    <div class="notif-header"><span style="font-weight:700; font-size:0.9rem;">Notifications</span><button onclick="markAllRead()" style="background:none;border:none;color:var(--primary);font-size:0.78rem;cursor:pointer;">Mark all read</button></div>
+                    <div class="notif-list" id="notifList"><div style="padding:2rem; text-align:center; color:var(--text-gray); font-size:0.85rem;">No notifications yet</div></div>
+                </div>
+            </div>
+            <a href="profile.html" class="active" id="nav-profile" title="My Profile">
+                <div style="width:2rem; height:2rem; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--secondary)); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700;" id="avatarCircle">?</div>
+            </a>
+            <button onclick="Utils.logout()" class="btn btn-secondary" style="padding:0.5rem 1rem; font-size:0.85rem;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </nav>
+
+    <div class="container" style="padding-bottom:4rem;">
+        <div class="page-header">
+            <div class="breadcrumb"><a href="../index.html">Home</a> <i class="fas fa-chevron-right"></i> <span>My Profile</span></div>
+            <h1><i class="fas fa-user-circle" style="color:var(--primary);"></i> My Account</h1>
+            <p>Manage your profile, security settings, and preferences</p>
+        </div>
+
+        <div class="profile-grid">
+            <!-- Sidebar -->
+            <div class="profile-sidebar">
+                <div class="avatar-card">
+                    <div class="avatar-circle" id="bigAvatar">?</div>
+                    <div class="avatar-name" id="profileName">Loading...</div>
+                    <div class="avatar-email" id="profileEmail">—</div>
+                    <div class="avatar-badge"><i class="fas fa-check-circle"></i> Verified Citizen</div>
+                </div>
+
+                <div class="profile-menu">
+                    <div class="profile-menu-item active" onclick="switchTab('personal', this)" id="tab-btn-personal">
+                        <i class="fas fa-user"></i> Personal Info
+                    </div>
+                    <div class="profile-menu-item" onclick="switchTab('password', this)" id="tab-btn-password">
+                        <i class="fas fa-lock"></i> Change Password
+                    </div>
+                    <div class="profile-menu-item" onclick="switchTab('security', this)" id="tab-btn-security">
+                        <i class="fas fa-shield-alt"></i> Security Settings
+                    </div>
+                    <div class="profile-menu-item" onclick="switchTab('notifications', this)" id="tab-btn-notifications">
+                        <i class="fas fa-bell"></i> Notifications
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div>
+                <!-- Personal Info Tab -->
+                <div class="profile-tab active" id="tab-personal">
+                    <div class="section-card">
+                        <div class="section-card-title"><i class="fas fa-id-card" style="color:var(--primary);"></i> Personal Information</div>
+                        <div class="section-card-desc">Update your display name and contact number.</div>
+
+                        <!-- Read-only info -->
+                        <div style="margin-bottom:1.75rem;">
+                            <div class="info-field">
+                                <div>
+                                    <div class="info-label">Email Address</div>
+                                    <div class="info-value" id="infoEmail">—</div>
+                                </div>
+                                <span style="font-size:0.75rem; color:var(--text-gray); background:var(--glass); border:1px solid var(--glass-border); padding:0.2rem 0.6rem; border-radius:2rem;"><i class="fas fa-lock" style="font-size:0.6rem;"></i> Cannot change</span>
+                            </div>
+                            <div class="info-field">
+                                <div>
+                                    <div class="info-label">Citizen ID</div>
+                                    <div class="info-value" id="infoCitizenId" style="font-family:monospace;">—</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form id="personalForm" novalidate>
+                            <div class="form-group">
+                                <label for="editName">Full Name</label>
+                                <div class="input-group">
+                                    <i class="fas fa-user input-icon"></i>
+                                    <input type="text" id="editName" placeholder="Your full name" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="editContact">Mobile Number</label>
+                                <div class="input-group">
+                                    <i class="fas fa-phone input-icon"></i>
+                                    <input type="tel" id="editContact" placeholder="+91 XXXXXXXXXX" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="savePersonalBtn" style="padding:0.75rem 2rem;">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Change Password Tab -->
+                <div class="profile-tab" id="tab-password">
+                    <div class="section-card">
+                        <div class="section-card-title"><i class="fas fa-lock" style="color:var(--primary);"></i> Change Password</div>
+                        <div class="section-card-desc">Choose a strong password to keep your account secure.</div>
+                        <form id="passwordForm" novalidate>
+                            <div class="form-group">
+                                <label for="currentPw">Current Password</label>
+                                <div class="input-group">
+                                    <i class="fas fa-lock input-icon"></i>
+                                    <input type="password" id="currentPw" placeholder="Enter current password" required>
+                                    <button type="button" class="toggle-pw" onclick="togglePw('currentPw','eye1')"><i class="fas fa-eye" id="eye1"></i></button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="newPw">New Password</label>
+                                <div class="input-group">
+                                    <i class="fas fa-key input-icon"></i>
+                                    <input type="password" id="newPw" placeholder="Min. 8 characters" required oninput="checkPwStrength(this.value)">
+                                    <button type="button" class="toggle-pw" onclick="togglePw('newPw','eye2')"><i class="fas fa-eye" id="eye2"></i></button>
+                                </div>
+                                <div class="pw-strength"><div class="pw-strength-bar" id="pwBar"></div></div>
+                                <div class="pw-hint" id="pwHint">Enter a new password</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="confirmPw">Confirm New Password</label>
+                                <div class="input-group">
+                                    <i class="fas fa-check-circle input-icon"></i>
+                                    <input type="password" id="confirmPw" placeholder="Re-enter new password" required>
+                                    <button type="button" class="toggle-pw" onclick="togglePw('confirmPw','eye3')"><i class="fas fa-eye" id="eye3"></i></button>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="savePwBtn" style="padding:0.75rem 2rem;">
+                                <i class="fas fa-lock"></i> Update Password
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Security Settings Tab -->
+                <div class="profile-tab" id="tab-security">
+                    <div class="section-card">
+                        <div class="section-card-title"><i class="fas fa-shield-alt" style="color:var(--primary);"></i> Security Settings</div>
+                        <div class="section-card-desc">Manage your account recovery options.</div>
+
+                        <div class="security-item">
+                            <div class="security-item-icon" style="background:rgba(16,185,129,0.15); color:var(--accent);"><i class="fas fa-envelope"></i></div>
+                            <div class="security-item-body">
+                                <h4>Email Address</h4>
+                                <p id="secEmail">—</p>
+                                <span class="security-status status-set"><i class="fas fa-check-circle"></i> Verified</span>
+                            </div>
+                        </div>
+                        <div class="security-item">
+                            <div class="security-item-icon" style="background:rgba(99,102,241,0.15); color:var(--primary);"><i class="fas fa-mobile-alt"></i></div>
+                            <div class="security-item-body">
+                                <h4>Mobile OTP Recovery</h4>
+                                <p>Receive a one-time OTP to reset your password (simulated for demo).</p>
+                                <span class="security-status status-set"><i class="fas fa-check-circle"></i> Available</span>
+                            </div>
+                        </div>
+                        <div class="security-item" id="secQuestionItem">
+                            <div class="security-item-icon" style="background:rgba(245,158,11,0.15); color:var(--warning);"><i class="fas fa-question-circle"></i></div>
+                            <div class="security-item-body">
+                                <h4>Security Question</h4>
+                                <p id="secQuestionText">Not configured</p>
+                                <span class="security-status" id="secQStatus"><i class="fas fa-exclamation-circle"></i> Not Set</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Update Security Question -->
+                    <div class="section-card">
+                        <div class="section-card-title"><i class="fas fa-edit" style="color:var(--primary);"></i> Update Security Question</div>
+                        <div class="section-card-desc">Change your security question and answer for account recovery.</div>
+                        <form id="securityForm" novalidate>
+                            <div class="form-group">
+                                <label for="newQuestion">Security Question</label>
+                                <div class="input-group">
+                                    <i class="fas fa-question-circle input-icon"></i>
+                                    <select id="newQuestion" required style="padding-left:2.75rem;">
+                                        <option value="">Select a security question</option>
+                                        <option value="What is the name of your first pet?">What is the name of your first pet?</option>
+                                        <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                                        <option value="What city were you born in?">What city were you born in?</option>
+                                        <option value="What was the name of your primary school?">What was the name of your primary school?</option>
+                                        <option value="What is your favorite childhood food?">What is your favorite childhood food?</option>
+                                        <option value="What is the name of your oldest sibling?">What is the name of your oldest sibling?</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="newAnswer">New Answer</label>
+                                <div class="input-group">
+                                    <i class="fas fa-key input-icon"></i>
+                                    <input type="text" id="newAnswer" placeholder="Your secret answer" required autocomplete="off">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="saveSecBtn" style="padding:0.75rem 2rem;">
+                                <i class="fas fa-shield-alt"></i> Update Security Question
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Notifications Tab -->
+                <div class="profile-tab" id="tab-notifications">
+                    <div class="section-card">
+                        <div class="section-card-title"><i class="fas fa-bell" style="color:var(--primary);"></i> Notification History</div>
+                        <div class="section-card-desc">All notifications from your complaint activities.</div>
+                        <div id="notifHistory"><div style="text-align:center; padding:3rem; color:var(--text-gray);"><i class="fas fa-spinner fa-spin" style="font-size:2rem; margin-bottom:1rem;"></i><br>Loading notifications...</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+    <script src="../utils.js"></script>
+    <script>
+        const user = Utils.getUser();
+        if (!user) window.location.href = '../login.html';
+
+        const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        document.getElementById('avatarCircle').textContent = initials;
+        document.getElementById('bigAvatar').textContent = initials;
+
+        function showToast(msg, type = 'info') {
+            const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
+            const t = document.getElementById('toast');
+            const el = document.createElement('div');
+            el.className = `toast-item ${type}`;
+            el.innerHTML = `<i class="fas ${icons[type]} toast-icon"></i><span class="toast-msg">${msg}</span>`;
+            t.appendChild(el);
+            setTimeout(() => el.remove(), 5000);
+        }
+
+        function switchTab(tab, el) {
+            document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.profile-menu-item').forEach(m => m.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            el.classList.add('active');
+            if (tab === 'notifications') loadNotifHistory();
+        }
+
+        function togglePw(inputId, iconId) {
+            const el = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            el.type = el.type === 'password' ? 'text' : 'password';
+            icon.className = el.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+        }
+
+        function checkPwStrength(val) {
+            const bar = document.getElementById('pwBar');
+            const hint = document.getElementById('pwHint');
+            let score = 0;
+            if (val.length >= 8) score++;
+            if (/[A-Z]/.test(val)) score++;
+            if (/[0-9]/.test(val)) score++;
+            if (/[^A-Za-z0-9]/.test(val)) score++;
+            const levels = [
+                { w: '0%', color: 'transparent', text: 'Enter a new password' },
+                { w: '25%', color: '#ef4444', text: 'Weak' },
+                { w: '50%', color: '#f59e0b', text: 'Fair' },
+                { w: '75%', color: '#6366f1', text: 'Good' },
+                { w: '100%', color: '#10b981', text: 'Strong ✓' }
+            ];
+            bar.style.width = levels[score].w;
+            bar.style.background = levels[score].color;
+            hint.textContent = val.length === 0 ? 'Enter a new password' : levels[score].text;
+            hint.style.color = levels[score].color || 'var(--text-gray)';
+        }
+
+        // Load profile
+        async function loadProfile() {
+            try {
+                const res = await Utils.get(`/users/${user.user_id}`);
+                if (res.status === 'success') {
+                    const u = res.user;
+                    document.getElementById('profileName').textContent = u.name;
+                    document.getElementById('profileEmail').textContent = u.email;
+                    document.getElementById('infoEmail').textContent = u.email;
+                    document.getElementById('infoCitizenId').textContent = `CIT-${String(u.user_id).padStart(5,'0')}`;
+                    document.getElementById('editName').value = u.name;
+                    document.getElementById('editContact').value = u.contact_info;
+                    document.getElementById('secEmail').textContent = u.email;
+
+                    if (u.security_question) {
+                        document.getElementById('secQuestionText').textContent = u.security_question;
+                        document.getElementById('secQStatus').innerHTML = '<i class="fas fa-check-circle"></i> Set';
+                        document.getElementById('secQStatus').className = 'security-status status-set';
+                        document.getElementById('newQuestion').value = u.security_question;
+                    } else {
+                        document.getElementById('secQuestionText').textContent = 'Not configured — set one for account recovery';
+                        document.getElementById('secQStatus').innerHTML = '<i class="fas fa-exclamation-circle"></i> Not Set';
+                        document.getElementById('secQStatus').className = 'security-status status-notset';
+                    }
+                }
+            } catch { showToast('Failed to load profile.', 'error'); }
+        }
+        loadProfile();
+
+        // Personal Info
+        document.getElementById('personalForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('editName').value.trim();
+            const contact_info = document.getElementById('editContact').value.trim();
+            if (!name || !contact_info) { showToast('All fields are required.', 'error'); return; }
+
+            const btn = document.getElementById('savePersonalBtn');
+            btn.classList.add('btn-loading');
+            btn.innerHTML = '<span class="spinner"></span> Saving...';
+            try {
+                const res = await Utils.patch(`/users/${user.user_id}`, { name, contact_info });
+                if (res.status === 'success') {
+                    // Update localStorage
+                    const updated = { ...user, name: res.user.name };
+                    Utils.saveUser(updated);
+                    document.getElementById('profileName').textContent = res.user.name;
+                    const newInit = res.user.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+                    document.getElementById('avatarCircle').textContent = newInit;
+                    document.getElementById('bigAvatar').textContent = newInit;
+                    showToast('Profile updated successfully!', 'success');
+                } else {
+                    showToast(res.message || 'Update failed.', 'error');
+                }
+            } catch { showToast('Server error.', 'error'); }
+            btn.classList.remove('btn-loading');
+            btn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+        });
+
+        // Change Password
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const current_password = document.getElementById('currentPw').value;
+            const new_password = document.getElementById('newPw').value;
+            const confirm = document.getElementById('confirmPw').value;
+            if (!current_password || !new_password || !confirm) { showToast('All fields are required.', 'error'); return; }
+            if (new_password.length < 8) { showToast('New password must be at least 8 characters.', 'error'); return; }
+            if (new_password !== confirm) { showToast('New passwords do not match.', 'error'); return; }
+
+            const btn = document.getElementById('savePwBtn');
+            btn.classList.add('btn-loading');
+            btn.innerHTML = '<span class="spinner"></span> Updating...';
+            try {
+                const res = await Utils.post(`/users/${user.user_id}/change-password`, { current_password, new_password });
+                if (res.status === 'success') {
+                    document.getElementById('passwordForm').reset();
+                    checkPwStrength('');
+                    showToast('Password changed successfully!', 'success');
+                } else {
+                    showToast(res.message || 'Password change failed.', 'error');
+                }
+            } catch { showToast('Server error.', 'error'); }
+            btn.classList.remove('btn-loading');
+            btn.innerHTML = '<i class="fas fa-lock"></i> Update Password';
+        });
+
+        // Security Question
+        document.getElementById('securityForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const security_question = document.getElementById('newQuestion').value;
+            const security_answer = document.getElementById('newAnswer').value.trim();
+            if (!security_question || !security_answer) { showToast('Please select a question and enter an answer.', 'error'); return; }
+
+            const btn = document.getElementById('saveSecBtn');
+            btn.classList.add('btn-loading');
+            btn.innerHTML = '<span class="spinner"></span> Saving...';
+            try {
+                const res = await Utils.patch(`/users/${user.user_id}`, { security_question, security_answer });
+                if (res.status === 'success') {
+                    document.getElementById('secQuestionText').textContent = security_question;
+                    document.getElementById('secQStatus').innerHTML = '<i class="fas fa-check-circle"></i> Set';
+                    document.getElementById('secQStatus').className = 'security-status status-set';
+                    document.getElementById('newAnswer').value = '';
+                    showToast('Security question updated successfully!', 'success');
+                } else {
+                    showToast(res.message || 'Update failed.', 'error');
+                }
+            } catch { showToast('Server error.', 'error'); }
+            btn.classList.remove('btn-loading');
+            btn.innerHTML = '<i class="fas fa-shield-alt"></i> Update Security Question';
+        });
+
+        // Notification History
+        async function loadNotifHistory() {
+            try {
+                const notifs = await Utils.get(`/notifications/user/${user.user_id}`);
+                const container = document.getElementById('notifHistory');
+                if (notifs.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--text-gray);"><i class="fas fa-bell-slash" style="font-size:3rem; opacity:0.3; margin-bottom:1rem;"></i><p>No notifications yet.</p></div>';
+                    return;
+                }
+                container.innerHTML = notifs.map(n => `
+                    <div style="padding:1rem; border-bottom:1px solid var(--glass-border); ${!n.is_read ? 'border-left:3px solid var(--primary); padding-left:calc(1rem - 3px); background:rgba(99,102,241,0.04);' : ''}">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;">
+                            <div>
+                                <div style="font-size:0.875rem; font-weight:700;">${n.title}</div>
+                                <div style="font-size:0.8rem; color:var(--text-gray); margin-top:0.25rem; line-height:1.5;">${n.message}</div>
+                            </div>
+                            ${!n.is_read ? '<span style="font-size:0.65rem; font-weight:700; color:var(--primary); background:rgba(99,102,241,0.12); padding:0.2rem 0.5rem; border-radius:2rem; white-space:nowrap;">NEW</span>' : ''}
+                        </div>
+                        <div style="font-size:0.7rem; color:var(--text-gray); margin-top:0.5rem;">${new Date(n.timestamp).toLocaleString('en-IN')}</div>
+                    </div>`).join('');
+            } catch { document.getElementById('notifHistory').innerHTML = '<div style="padding:2rem; color:var(--text-gray); text-align:center;">Failed to load notifications.</div>'; }
+        }
+
+        // Notifications Bell
+        async function loadBellNotifications() {
+            try {
+                const notifs = await Utils.get(`/notifications/user/${user.user_id}`);
+                const unread = notifs.filter(n => !n.is_read);
+                const badge = document.getElementById('notifBadge');
+                if (unread.length > 0) { badge.style.display = 'flex'; badge.textContent = unread.length > 9 ? '9+' : unread.length; }
+                else { badge.style.display = 'none'; }
+                const list = document.getElementById('notifList');
+                if (notifs.length === 0) { list.innerHTML = '<div style="padding:2rem; text-align:center; color:var(--text-gray); font-size:0.85rem;">No notifications yet</div>'; return; }
+                list.innerHTML = notifs.map(n => `
+                    <div class="notif-item ${!n.is_read ? 'notif-unread' : ''}">
+                        <div class="notif-title">${n.title}</div>
+                        <div class="notif-msg">${n.message}</div>
+                        <div class="notif-time">${new Date(n.timestamp).toLocaleString()}</div>
+                    </div>`).join('');
+            } catch {}
+        }
+        function toggleNotif() { document.getElementById('notifDropdown').classList.toggle('open'); }
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('notifBellBtn').contains(e.target) && !document.getElementById('notifDropdown').contains(e.target))
+                document.getElementById('notifDropdown').classList.remove('open');
+        });
+        async function markAllRead() {
+            await Utils.post('/notifications/read', { user_id: user.user_id });
+            document.getElementById('notifBadge').style.display = 'none';
+            loadBellNotifications();
+        }
+        loadBellNotifications();
+    </script>
+</body>
+</html>

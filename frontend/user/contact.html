@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us | PingThePanchayat</title>
+    <meta name="description" content="Get in touch with the PingThePanchayat support team for any civic assistance or platform queries.">
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .user-nav { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 5%; background: rgba(15,23,42,0.9); backdrop-filter: blur(20px); border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 200; }
+        .user-nav-links { display: flex; gap: 1.5rem; align-items: center; }
+        .user-nav-links a { color: var(--text-gray); text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: color 0.2s; padding: 0.4rem 0.75rem; border-radius: 0.5rem; }
+        .user-nav-links a:hover, .user-nav-links a.active { color: white; background: rgba(255,255,255,0.06); }
+        .notif-bell { position: relative; background: none; border: none; color: var(--text-gray); font-size: 1.15rem; cursor: pointer; padding: 0.4rem 0.6rem; border-radius: 0.5rem; transition: all 0.2s; }
+        .notif-bell:hover { color: white; background: rgba(255,255,255,0.06); }
+        .notif-badge { position: absolute; top: 0; right: 0; background: var(--danger); color: white; font-size: 0.6rem; font-weight: 700; min-width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg-dark); }
+
+        .page-header { padding: 2.5rem 0 1rem; }
+        .page-header h1 { font-size: 2rem; font-weight: 800; }
+        .page-header p { color: var(--text-gray); margin-top: 0.5rem; }
+        .breadcrumb { display: flex; align-items: center; gap: 0.5rem; font-size: 0.83rem; color: var(--text-gray); margin-bottom: 0.5rem; }
+        .breadcrumb a { color: var(--text-gray); text-decoration: none; }
+        .breadcrumb a:hover { color: white; }
+
+        .contact-grid { display: grid; grid-template-columns: 1fr 380px; gap: 2rem; }
+        @media (max-width: 900px) { .contact-grid { grid-template-columns: 1fr; } }
+
+        .input-group { position: relative; }
+        .input-group .input-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-gray); font-size: 0.9rem; pointer-events: none; }
+        .input-group .textarea-icon { top: 1rem; transform: none; }
+        .input-group input, .input-group textarea, .input-group select { padding-left: 2.75rem; }
+
+        .contact-info-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 1.25rem; padding: 2rem; height: fit-content; }
+        .contact-info-item { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--glass-border); }
+        .contact-info-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .contact-info-icon { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+        .contact-info-text h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .contact-info-text p { font-size: 0.83rem; color: var(--text-gray); line-height: 1.5; }
+
+        .faq-list { margin-top: 2rem; }
+        .faq-item { border: 1px solid var(--glass-border); border-radius: 0.75rem; margin-bottom: 0.75rem; overflow: hidden; }
+        .faq-question { padding: 1rem 1.25rem; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: var(--glass); transition: background 0.2s; }
+        .faq-question:hover { background: rgba(255,255,255,0.05); }
+        .faq-answer { padding: 0 1.25rem; max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s; font-size: 0.85rem; color: var(--text-gray); line-height: 1.6; }
+        .faq-answer.open { max-height: 200px; padding: 0.75rem 1.25rem 1rem; }
+
+        .char-count { font-size: 0.78rem; color: var(--text-gray); text-align: right; margin-top: 0.25rem; }
+        .success-box { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 1rem; padding: 2rem; text-align: center; display: none; }
+        .success-box i { font-size: 3rem; color: var(--accent); margin-bottom: 1rem; }
+
+        #toast { position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.75rem; }
+        .toast-item { display: flex; align-items: center; gap: 0.75rem; background: rgba(15,23,42,0.95); border: 1px solid var(--glass-border); border-radius: 0.75rem; padding: 1rem 1.25rem; min-width: 280px; max-width: 360px; backdrop-filter: blur(20px); box-shadow: 0 8px 25px rgba(0,0,0,0.4); animation: slideInRight 0.3s ease; }
+        .toast-item.success { border-left: 4px solid var(--accent); }
+        .toast-item.error { border-left: 4px solid var(--danger); }
+        .toast-item.info { border-left: 4px solid var(--primary); }
+        .toast-icon { font-size: 1.1rem; }
+        .toast-item.success .toast-icon { color: var(--accent); }
+        .toast-item.error .toast-icon { color: var(--danger); }
+        .toast-item.info .toast-icon { color: var(--primary); }
+        .toast-msg { font-size: 0.875rem; flex: 1; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .btn-loading { opacity: 0.7; pointer-events: none; }
+        .spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        select option { background: #0f172a; color: white; }
+
+        /* Notification Dropdown */
+        .notif-dropdown { position: absolute; top: 3.5rem; right: 0; width: 340px; background: rgba(15,23,42,0.98); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 500; display: none; }
+        .notif-dropdown.open { display: block; }
+        .notif-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
+        .notif-list { max-height: 320px; overflow-y: auto; }
+        .notif-item { padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--glass-border); transition: background 0.2s; }
+        .notif-item:hover { background: rgba(255,255,255,0.03); }
+        .notif-item:last-child { border-bottom: none; }
+        .notif-title { font-size: 0.83rem; font-weight: 700; }
+        .notif-msg { font-size: 0.78rem; color: var(--text-gray); margin-top: 0.2rem; }
+        .notif-time { font-size: 0.7rem; color: var(--text-gray); margin-top: 0.3rem; }
+        .notif-unread { background: rgba(99,102,241,0.05); border-left: 3px solid var(--primary); }
+        .notif-container { position: relative; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="user-nav">
+        <a href="../index.html" class="logo" style="text-decoration:none;"><i class="fas fa-satellite-dish"></i> <span>Ping</span>ThePanchayat</a>
+        <div class="user-nav-links">
+            <a href="complaint.html" id="nav-complaint"><i class="fas fa-plus-circle"></i> Report Issue</a>
+            <a href="status.html" id="nav-status"><i class="fas fa-list-alt"></i> My Complaints</a>
+            <a href="contact.html" class="active" id="nav-contact"><i class="fas fa-envelope"></i> Contact</a>
+            <div class="notif-container">
+                <button class="notif-bell" onclick="toggleNotif()" id="notifBellBtn" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="notif-badge" id="notifBadge" style="display:none;"></span>
+                </button>
+                <div class="notif-dropdown" id="notifDropdown">
+                    <div class="notif-header"><span style="font-weight:700; font-size:0.9rem;">Notifications</span><button onclick="markAllRead()" style="background:none;border:none;color:var(--primary);font-size:0.78rem;cursor:pointer;">Mark all read</button></div>
+                    <div class="notif-list" id="notifList"><div style="padding:2rem; text-align:center; color:var(--text-gray); font-size:0.85rem;">No notifications yet</div></div>
+                </div>
+            </div>
+            <a href="profile.html" id="nav-profile" title="My Profile">
+                <div style="width:2rem; height:2rem; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--secondary)); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700;" id="avatarCircle">?</div>
+            </a>
+            <button onclick="Utils.logout()" class="btn btn-secondary" style="padding:0.5rem 1rem; font-size:0.85rem;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </nav>
+
+    <div class="container" style="padding-bottom:4rem;">
+        <div class="page-header">
+            <div class="breadcrumb"><a href="../index.html">Home</a> <i class="fas fa-chevron-right"></i> <span>Contact Us</span></div>
+            <h1><i class="fas fa-headset" style="color:var(--primary);"></i> Contact Support</h1>
+            <p>Have a question or need help? We're here for you.</p>
+        </div>
+
+        <div class="contact-grid">
+            <!-- Contact Form -->
+            <div>
+                <div class="glass-card">
+                    <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.5rem;">Send us a Message</h2>
+                    <p style="color:var(--text-gray); font-size:0.875rem; margin-bottom:2rem;">We respond within 24 business hours.</p>
+
+                    <div id="formArea">
+                        <form id="contactForm" novalidate>
+                            <div class="grid" style="grid-template-columns:1fr 1fr; gap:1.25rem;">
+                                <div class="form-group">
+                                    <label for="cname">Full Name *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-user input-icon"></i>
+                                        <input type="text" id="cname" placeholder="Your full name" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cemail">Email Address *</label>
+                                    <div class="input-group">
+                                        <i class="fas fa-envelope input-icon"></i>
+                                        <input type="email" id="cemail" placeholder="you@example.com" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="csubject">Subject *</label>
+                                <div class="input-group">
+                                    <i class="fas fa-tag input-icon"></i>
+                                    <select id="csubject" required style="padding-left:2.75rem;">
+                                        <option value="">Select a subject</option>
+                                        <option value="Complaint Status Inquiry">Complaint Status Inquiry</option>
+                                        <option value="Technical Issue">Technical Issue</option>
+                                        <option value="Account & Registration">Account & Registration</option>
+                                        <option value="Feedback & Suggestions">Feedback & Suggestions</option>
+                                        <option value="General Query">General Query</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="cmessage">Message *</label>
+                                <div class="input-group">
+                                    <i class="fas fa-comment input-icon textarea-icon"></i>
+                                    <textarea id="cmessage" rows="5" placeholder="Describe your query or issue in detail..." required oninput="countMsg()" style="padding-left:2.75rem; resize:vertical;"></textarea>
+                                </div>
+                                <div class="char-count"><span id="msgCount">0</span> characters</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%; padding:0.9rem; font-size:1rem;" id="submitContactBtn">
+                                <i class="fas fa-paper-plane"></i> Send Message
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="success-box" id="successBox">
+                        <i class="fas fa-check-circle"></i>
+                        <h3 style="font-weight:700; margin-bottom:0.5rem;">Message Sent!</h3>
+                        <p style="color:var(--text-gray); font-size:0.875rem;">Thank you for reaching out. We'll respond to your query within 24 hours.</p>
+                        <button onclick="resetForm()" class="btn btn-secondary" style="margin-top:1.5rem;"><i class="fas fa-redo"></i> Send Another Message</button>
+                    </div>
+                </div>
+
+                <!-- FAQ -->
+                <div style="margin-top:2rem;">
+                    <h3 style="font-size:1.15rem; font-weight:700; margin-bottom:1rem;"><i class="fas fa-question-circle" style="color:var(--primary);"></i> Frequently Asked Questions</h3>
+                    <div class="faq-list">
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="toggleFaq(this)">How do I track my complaint? <i class="fas fa-chevron-down"></i></div>
+                            <div class="faq-answer">Log in to your account and visit the "My Complaints" section. Each complaint has a unique PTP-YEAR-XXXX reference number and a progress tracker showing Pending → In Progress → Resolved.</div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="toggleFaq(this)">How long does resolution take? <i class="fas fa-chevron-down"></i></div>
+                            <div class="faq-answer">High-severity issues (like water contamination or drainage overflow) are typically addressed within 24–48 hours. Medium and low severity issues may take 3–7 business days.</div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="toggleFaq(this)">I forgot my password, what should I do? <i class="fas fa-chevron-down"></i></div>
+                            <div class="faq-answer">Visit the login page and click "Forgot Password". You can reset your password using either a simulated OTP (sent to your registered mobile) or by answering your security question.</div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question" onclick="toggleFaq(this)">Can I submit multiple complaints? <i class="fas fa-chevron-down"></i></div>
+                            <div class="faq-answer">Yes, you can submit as many complaints as needed. Each will receive a unique reference number and be tracked independently.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Info -->
+            <div>
+                <div class="contact-info-card">
+                    <h3 style="font-size:1.1rem; font-weight:800; margin-bottom:1.5rem;">Get in Touch</h3>
+                    <div class="contact-info-item">
+                        <div class="contact-info-icon" style="background:rgba(99,102,241,0.15); color:var(--primary);"><i class="fas fa-phone-alt"></i></div>
+                        <div class="contact-info-text">
+                            <h4>Civic Helpline</h4>
+                            <p>1800-XXX-XXXX (Toll Free)<br>Mon–Sat, 9 AM – 6 PM</p>
+                        </div>
+                    </div>
+                    <div class="contact-info-item">
+                        <div class="contact-info-icon" style="background:rgba(236,72,153,0.15); color:var(--secondary);"><i class="fas fa-envelope"></i></div>
+                        <div class="contact-info-text">
+                            <h4>Email Support</h4>
+                            <p>support@pingthepanchayat.gov.in<br>Response within 24 hours</p>
+                        </div>
+                    </div>
+                    <div class="contact-info-item">
+                        <div class="contact-info-icon" style="background:rgba(16,185,129,0.15); color:var(--accent);"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="contact-info-text">
+                            <h4>Office Address</h4>
+                            <p>Gram Panchayat Technology Cell<br>District Collectorate, Block B<br>Rural Development Ministry</p>
+                        </div>
+                    </div>
+                    <div class="contact-info-item">
+                        <div class="contact-info-icon" style="background:rgba(245,158,11,0.15); color:var(--warning);"><i class="fas fa-clock"></i></div>
+                        <div class="contact-info-text">
+                            <h4>Office Hours</h4>
+                            <p>Monday – Friday: 9 AM – 5 PM<br>Saturday: 9 AM – 1 PM</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="margin-top:1.5rem; padding:1.5rem;">
+                    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem;">
+                        <div style="width:2.5rem; height:2.5rem; background:rgba(239,68,68,0.15); border-radius:0.75rem; display:flex; align-items:center; justify-content:center; color:var(--danger);"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div><h4 style="font-size:0.9rem; font-weight:700;">Emergency Civic Issues</h4></div>
+                    </div>
+                    <p style="font-size:0.83rem; color:var(--text-gray);">For urgent threats like sewage overflow or contaminated water supply, please call the emergency helpline immediately rather than using this form.</p>
+                    <div style="margin-top:1rem; padding:0.75rem 1rem; background:rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius:0.75rem; font-size:0.83rem; font-weight:700; color:var(--danger);">
+                        <i class="fas fa-phone"></i> Emergency: 112
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+    <script src="../utils.js"></script>
+    <script>
+        const user = Utils.getUser();
+        if (!user) window.location.href = '../login.html';
+        else {
+            const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            document.getElementById('avatarCircle').textContent = initials;
+            document.getElementById('cname').value = user.name;
+            document.getElementById('cemail').value = user.email;
+        }
+
+        function showToast(msg, type = 'info') {
+            const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
+            const t = document.getElementById('toast');
+            const el = document.createElement('div');
+            el.className = `toast-item ${type}`;
+            el.innerHTML = `<i class="fas ${icons[type]} toast-icon"></i><span class="toast-msg">${msg}</span>`;
+            t.appendChild(el);
+            setTimeout(() => el.remove(), 5000);
+        }
+
+        function countMsg() {
+            document.getElementById('msgCount').textContent = document.getElementById('cmessage').value.length;
+        }
+
+        function toggleFaq(el) {
+            const answer = el.nextElementSibling;
+            answer.classList.toggle('open');
+            el.querySelector('i').style.transform = answer.classList.contains('open') ? 'rotate(180deg)' : '';
+        }
+
+        function resetForm() {
+            document.getElementById('successBox').style.display = 'none';
+            document.getElementById('formArea').style.display = 'block';
+            document.getElementById('contactForm').reset();
+            document.getElementById('msgCount').textContent = '0';
+        }
+
+        document.getElementById('contactForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('cname').value.trim();
+            const email = document.getElementById('cemail').value.trim();
+            const subject = document.getElementById('csubject').value;
+            const message = document.getElementById('cmessage').value.trim();
+            if (!name || !email || !subject || !message) { showToast('Please fill in all fields.', 'error'); return; }
+            if (message.length < 10) { showToast('Please provide a more detailed message.', 'error'); return; }
+
+            const btn = document.getElementById('submitContactBtn');
+            btn.classList.add('btn-loading');
+            btn.innerHTML = '<span class="spinner"></span> Sending...';
+            try {
+                const res = await Utils.post('/contact', { name, email, subject, message });
+                if (res.status === 'success') {
+                    document.getElementById('formArea').style.display = 'none';
+                    document.getElementById('successBox').style.display = 'block';
+                } else {
+                    showToast(res.message || 'Failed to send message. Please try again.', 'error');
+                }
+            } catch { showToast('Unable to connect. Please ensure the server is running.', 'error'); }
+            btn.classList.remove('btn-loading');
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Message';
+        });
+
+        // Notifications
+        async function loadNotifications() {
+            try {
+                const notifs = await Utils.get(`/notifications/user/${user.user_id}`);
+                const unread = notifs.filter(n => !n.is_read);
+                const badge = document.getElementById('notifBadge');
+                if (unread.length > 0) { badge.style.display = 'flex'; badge.textContent = unread.length > 9 ? '9+' : unread.length; }
+                else { badge.style.display = 'none'; }
+                const list = document.getElementById('notifList');
+                if (notifs.length === 0) { list.innerHTML = '<div style="padding:2rem; text-align:center; color:var(--text-gray); font-size:0.85rem;">No notifications yet</div>'; return; }
+                list.innerHTML = notifs.map(n => `
+                    <div class="notif-item ${!n.is_read ? 'notif-unread' : ''}">
+                        <div class="notif-title">${n.title}</div>
+                        <div class="notif-msg">${n.message}</div>
+                        <div class="notif-time">${new Date(n.timestamp).toLocaleString()}</div>
+                    </div>`).join('');
+            } catch {}
+        }
+        function toggleNotif() { document.getElementById('notifDropdown').classList.toggle('open'); }
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('notifBellBtn').contains(e.target) && !document.getElementById('notifDropdown').contains(e.target))
+                document.getElementById('notifDropdown').classList.remove('open');
+        });
+        async function markAllRead() {
+            await Utils.post('/notifications/read', { user_id: user.user_id });
+            document.getElementById('notifBadge').style.display = 'none';
+            loadNotifications();
+        }
+        loadNotifications();
+    </script>
+</body>
+</html>

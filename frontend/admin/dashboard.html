@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Civic Command Center | PingThePanchayat</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* ── Second KPI row – slightly smaller cards ── */
+        #kpiGrid2 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+            margin-top: 1.25rem;
+            margin-bottom: 2rem;
+        }
+        #kpiGrid2 .kpi-card {
+            padding: 1.1rem 1.25rem;
+        }
+        #kpiGrid2 .kpi-value {
+            font-size: 1.9rem;
+        }
+        #kpiGrid2 .kpi-label {
+            font-size: 0.78rem;
+        }
+        #kpiGrid2 .kpi-icon {
+            width: 2.2rem;
+            height: 2.2rem;
+            font-size: 0.9rem;
+        }
+
+        /* ── Pulse animation for critical badge ── */
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+            50%       { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+        }
+        .badge-pulse {
+            animation: pulse-red 1.6s infinite;
+        }
+    </style>
+</head>
+<body class="admin-layout">
+    <!-- ═══════════════════════════════════════════ SIDEBAR ═══════════════════════════════════════════ -->
+    <div class="sidebar">
+        <div class="logo" style="margin-bottom: 2rem;"><i class="fas fa-satellite-dish"></i> <span>Ping</span>Panchayat</div>
+        <a href="dashboard.html"    class="sidebar-link active"><i class="fas fa-th-large"></i>     Dashboard</a>
+        <a href="management.html"   class="sidebar-link">        <i class="fas fa-tasks"></i>        Complaints</a>
+        <a href="resolution.html"   class="sidebar-link">        <i class="fas fa-check-circle"></i> Resolution Center</a>
+        <a href="analytics.html"    class="sidebar-link">        <i class="fas fa-chart-line"></i>   Analytics</a>
+        <a href="decision.html"     class="sidebar-link">        <i class="fas fa-brain"></i>        Decision Center</a>
+        <a href="reports.html"      class="sidebar-link">        <i class="fas fa-file-pdf"></i>     Reports</a>
+        <a href="report-history.html" class="sidebar-link">      <i class="fas fa-star"></i>         Report History</a>
+        <div style="margin-top: auto;">
+            <button onclick="Utils.logout()" class="btn btn-secondary" style="width: 100%;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ MAIN ════════════════════════════════════════════ -->
+    <main class="container">
+
+        <!-- Top Navigation / Header -->
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <h2 style="font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px;">Civic Intelligence Command Center</h2>
+                <p style="color: var(--text-gray); font-size: 0.9rem;" id="currentDateTime"></p>
+            </div>
+
+            <div class="header-actions">
+                <!-- Notification Bell -->
+                <div class="notification-bell-container">
+                    <button class="notification-bell" id="bellBtn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notiBadge" style="display: none;">0</span>
+                    </button>
+                    <div class="notification-dropdown" id="notiDropdown">
+                        <div class="notification-dropdown-header">Civic Alerts &amp; Notifications</div>
+                        <div id="notiList">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="adminInfo" style="color: var(--text-gray);">
+                    Logged in as: <span style="color: white; font-weight: 600;">Admin</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Status Banner -->
+        <div id="statusBannerContainer">
+            <!-- Populated dynamically -->
+        </div>
+
+        <!-- ──────────── ROW 1: Original 6-KPI Grid ──────────── -->
+        <div class="kpi-grid" id="kpiGrid">
+            <div class="kpi-card" style="--accent-color: var(--primary); --bg-alpha: rgba(99, 102, 241, 0.15)">
+                <div class="kpi-header">
+                    <span class="kpi-label">Total Complaints</span>
+                    <div class="kpi-icon"><i class="fas fa-clipboard-list"></i></div>
+                </div>
+                <div class="kpi-value" id="kpiTotal">0</div>
+            </div>
+            <div class="kpi-card" style="--accent-color: var(--danger); --bg-alpha: rgba(239, 68, 68, 0.15)">
+                <div class="kpi-header">
+                    <span class="kpi-label">Active High-Risk Wards</span>
+                    <div class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                </div>
+                <div class="kpi-value" id="kpiHighRisk">0</div>
+            </div>
+            <div class="kpi-card" style="--accent-color: var(--success); --bg-alpha: rgba(16, 185, 129, 0.15)">
+                <div class="kpi-header">
+                    <span class="kpi-label">Village Health Score</span>
+                    <div class="kpi-icon"><i class="fas fa-heartbeat"></i></div>
+                </div>
+                <div class="kpi-value" id="kpiHealth">--</div>
+            </div>
+            <div class="kpi-card" style="--accent-color: var(--accent); --bg-alpha: rgba(16, 185, 129, 0.15)">
+                <div class="kpi-header">
+                    <span class="kpi-label">Resolution Rate</span>
+                    <div class="kpi-icon"><i class="fas fa-check-circle"></i></div>
+                </div>
+                <div class="kpi-value" id="kpiResolution">0%</div>
+            </div>
+            <div class="kpi-card" style="--accent-color: var(--warning); --bg-alpha: rgba(245, 158, 11, 0.15)">
+                <div class="kpi-header">
+                    <span class="kpi-label">Pending Critical Cases</span>
+                    <div class="kpi-icon"><i class="fas fa-clock"></i></div>
+                </div>
+                <div class="kpi-value" id="kpiPendingCritical">0</div>
+            </div>
+            <div class="kpi-card" style="--accent-color: var(--secondary); --bg-alpha: rgba(236, 72, 153, 0.15)">
+                <div class="kpi-header">
+                    <span class="kpi-label">Authority Efficiency</span>
+                    <div class="kpi-icon"><i class="fas fa-tachometer-alt"></i></div>
+                </div>
+                <div class="kpi-value" id="kpiEfficiency">0</div>
+            </div>
+        </div>
+
+        <!-- ──────────── ROW 2: 4 New KPI Cards ──────────── -->
+        <div id="kpiGrid2">
+            <!-- Reports Generated -->
+            <div class="kpi-card" style="--accent-color: #3b82f6; --bg-alpha: rgba(59, 130, 246, 0.15)">
+                <div class="kpi-header">
+                    <span class="kpi-label">Reports Generated</span>
+                    <div class="kpi-icon" style="background: rgba(59,130,246,0.2); color: #3b82f6;"><i class="fas fa-file-alt"></i></div>
+                </div>
+                <div class="kpi-value" id="kpiReportsGenerated" style="color: #3b82f6;">0</div>
+            </div>
+            <!-- Pending Escalations -->
+            <div class="kpi-card" style="--accent-color: var(--warning); --bg-alpha: rgba(245, 158, 11, 0.15)">
+                <div class="kpi-header">
+                    <span class="kpi-label">Pending Escalations</span>
+                    <div class="kpi-icon" style="background: rgba(245,158,11,0.2); color: var(--warning);"><i class="fas fa-angle-double-up"></i></div>
+                </div>
+                <div class="kpi-value" id="kpiEscalations" style="color: var(--warning);">0</div>
+            </div>
+            <!-- Critical Cases -->
+            <div class="kpi-card" style="--accent-color: var(--danger); --bg-alpha: rgba(239, 68, 68, 0.15)">
+                <div class="kpi-header">
+                    <span class="kpi-label">Critical Cases</span>
+                    <div class="kpi-icon" style="background: rgba(239,68,68,0.2); color: var(--danger);"><i class="fas fa-fire"></i></div>
+                </div>
+                <div class="kpi-value" id="kpiCritical" style="color: var(--danger);">0</div>
+            </div>
+            <!-- Authority Actions Pending -->
+            <div class="kpi-card" style="--accent-color: #a855f7; --bg-alpha: rgba(168, 85, 247, 0.15)">
+                <div class="kpi-header">
+                    <span class="kpi-label">Authority Actions Pending</span>
+                    <div class="kpi-icon" style="background: rgba(168,85,247,0.2); color: #a855f7;"><i class="fas fa-university"></i></div>
+                </div>
+                <div class="kpi-value" id="kpiAuthorityPending" style="color: #a855f7;">0</div>
+            </div>
+        </div>
+
+        <!-- ──────────── Empty / Dashboard Content ──────────── -->
+        <div id="noData" class="empty-state" style="display: none;">
+            <i class="fas fa-database"></i>
+            <p>No complaints submitted yet. Analytics will populate once reports are filed.</p>
+        </div>
+
+        <div id="dashboardContent">
+            <div class="grid" style="grid-template-columns: 2fr 1fr;">
+                <!-- Left Column (Priority Actions & Smart Map Overview) -->
+                <div style="display: flex; flex-direction: column; gap: 2rem;">
+                    <!-- Priority Actions Panel -->
+                    <div class="glass-card" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="font-size: 1.1rem; font-weight: 700;"><i class="fas fa-bolt" style="color: var(--danger); margin-right: 0.5rem;"></i>Priority Actions Needed</h3>
+                            <a href="management.html" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Manage All</a>
+                        </div>
+                        <table class="priority-table">
+                            <thead>
+                                <tr>
+                                    <th>Area</th>
+                                    <th>Issue Type</th>
+                                    <th>Severity</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="priorityTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Smart Area Overview -->
+                    <div class="glass-card" style="padding: 1.5rem;">
+                        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem;"><i class="fas fa-map-marked-alt" style="margin-right: 0.5rem;"></i>Smart Area Overview</h3>
+                        <div class="ward-grid" id="wardGrid">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column (Activity Log) -->
+                <div>
+                    <div class="glass-card" style="padding: 1.5rem; height: 100%;">
+                        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;"><i class="fas fa-history" style="margin-right: 0.5rem;"></i>Command Activity Log</h3>
+                        <div class="activity-timeline" id="activityLog">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════ WARD MODAL ═══════════════════════════════════════ -->
+    <div class="drawer-overlay" id="modalOverlay"></div>
+    <div class="side-drawer" id="wardModal">
+        <div class="side-drawer-header">
+            <h3 id="modalWardName">Ward Details</h3>
+            <button class="close-drawer-btn" id="closeModalBtn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="side-drawer-content">
+            <div class="drawer-section">
+                <div class="drawer-grid">
+                    <div>
+                        <div class="drawer-section-title">Health Index</div>
+                        <div style="font-size: 2.2rem; font-weight: 800; line-height: 1;" id="modalWardScore">--</div>
+                    </div>
+                    <div>
+                        <div class="drawer-section-title">Risk Level</div>
+                        <div id="modalWardRiskBadge" style="margin-top: 0.25rem;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="drawer-section">
+                <div class="drawer-section-title">Complaint Distribution</div>
+                <p id="modalWardTotalText" style="font-size: 0.9rem; margin-bottom: 0.5rem;"></p>
+                <div class="kpi-header" style="margin: 0.25rem 0;">
+                    <span style="font-size: 0.8rem; color: var(--text-gray);">Water Issues</span>
+                    <span style="font-size: 0.85rem; font-weight: 700;" id="modalWardWaterCount">0</span>
+                </div>
+                <div class="kpi-header" style="margin: 0.25rem 0;">
+                    <span style="font-size: 0.8rem; color: var(--text-gray);">Sanitation Issues</span>
+                    <span style="font-size: 0.85rem; font-weight: 700;" id="modalWardSanCount">0</span>
+                </div>
+                <div class="kpi-header" style="margin: 0.25rem 0;">
+                    <span style="font-size: 0.8rem; color: var(--text-gray);">Drainage Issues</span>
+                    <span style="font-size: 0.85rem; font-weight: 700;" id="modalWardDrainCount">0</span>
+                </div>
+            </div>
+
+            <div class="drawer-section">
+                <div class="drawer-section-title">Decision Intelligence Actions</div>
+                <div class="decision-action-list" id="modalWardActions">
+                    <!-- Dynamic recommendation cards -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin-utils.js"></script>
+    <script>
+        if (!Utils.getAdmin()) window.location.href = 'login.html';
+
+        // ── DateTime clock ──────────────────────────────────────────────────────
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentDateTime').innerText = now.toLocaleString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // ── Notification bell toggle ────────────────────────────────────────────
+        const bellBtn       = document.getElementById('bellBtn');
+        const notiDropdown  = document.getElementById('notiDropdown');
+        bellBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            notiDropdown.classList.toggle('open');
+        });
+        document.addEventListener('click', () => { notiDropdown.classList.remove('open'); });
+        notiDropdown.addEventListener('click', (e) => { e.stopPropagation(); });
+
+        // ── Main dashboard initializer ──────────────────────────────────────────
+        async function initDashboard() {
+            // Parallel fetches
+            const [data, complaints, reportsHistory] = await Promise.all([
+                Utils.get('/analytics'),
+                Utils.get('/complaints'),
+                Utils.get('/reports/history').catch(() => [])
+            ]);
+
+            // ── Hide / Show grid when no data ──────────────────────────────────
+            if (!data.total || data.total === 0) {
+                document.getElementById('noData').style.display       = 'block';
+                document.getElementById('dashboardContent').style.display = 'none';
+                document.getElementById('kpiGrid').style.display      = 'none';
+                document.getElementById('kpiGrid2').style.display     = 'none';
+                return;
+            }
+
+            document.getElementById('noData').style.display           = 'none';
+            document.getElementById('dashboardContent').style.display = 'block';
+            document.getElementById('kpiGrid').style.display          = 'grid';
+            document.getElementById('kpiGrid2').style.display         = 'grid';
+
+            // ── Row 1: Original KPIs ───────────────────────────────────────────
+            document.getElementById('kpiTotal').innerText          = data.total;
+            document.getElementById('kpiHighRisk').innerText       = data.active_high_risk_wards;
+            document.getElementById('kpiHealth').innerText         = data.avg_health_score + '%';
+            document.getElementById('kpiResolution').innerText     = data.resolution_rate + '%';
+            document.getElementById('kpiPendingCritical').innerText = data.pending_critical;
+            document.getElementById('kpiEfficiency').innerText     = data.efficiency_score;
+
+            // ── Row 2: New KPIs ────────────────────────────────────────────────
+            const historyArr    = Array.isArray(reportsHistory) ? reportsHistory : (reportsHistory.reports || []);
+            const reportsCount  = historyArr.length;
+            const escalations   = (data.escalated_count !== undefined)
+                ? data.escalated_count
+                : complaints.filter(c => c.lifecycle_status === 'Escalated').length;
+            const criticalCount = data.high_severity || data.pending_critical || 0;
+            const authorityPending = historyArr.filter(r =>
+                r.authority_submission_status === 'Sent to Authority' ||
+                r.status === 'Sent to Authority'
+            ).length;
+
+            document.getElementById('kpiReportsGenerated').innerText = reportsCount;
+            document.getElementById('kpiEscalations').innerText      = escalations;
+            document.getElementById('kpiCritical').innerText         = criticalCount;
+            document.getElementById('kpiAuthorityPending').innerText = authorityPending;
+
+            // ── Status Banner ──────────────────────────────────────────────────
+            let bannerClass = 'healthy';
+            let bannerColor = 'var(--success)';
+            let statusText  = 'HEALTHY OPERATIONS';
+            let statusEmoji = '🟢';
+
+            if (data.avg_health_score < 60) {
+                bannerClass = 'critical';
+                bannerColor = 'var(--danger)';
+                statusText  = 'CRITICAL RISK DETECTED';
+                statusEmoji = '🔴';
+            } else if (data.avg_health_score < 90) {
+                bannerClass = 'moderate';
+                bannerColor = 'var(--warning)';
+                statusText  = 'MODERATE RISK DETECTED';
+                statusEmoji = '🟡';
+            }
+
+            const topTypes = Object.entries(data.by_type)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 2)
+                .map(([type, count]) => `${type} (${count} complaints)`);
+            const driversStr = topTypes.length > 0 ? topTypes.join(' & ') : 'No prominent drivers';
+
+            document.getElementById('statusBannerContainer').innerHTML = `
+                <div class="status-banner ${bannerClass}" style="--accent-color: ${bannerColor}">
+                    <div class="status-banner-info">
+                        <div class="status-indicator-dot" style="--accent-color: ${bannerColor}"></div>
+                        <div>
+                            <div class="status-banner-title">${statusEmoji} Village Health: ${statusText}</div>
+                            <div class="status-banner-drivers">Primary risk drivers: ${driversStr}</div>
+                        </div>
+                    </div>
+                    <div class="status-banner-metrics">
+                        <div class="status-banner-metric">
+                            <div class="status-banner-metric-val">${data.pending}</div>
+                            <div class="status-banner-metric-lbl">Pending</div>
+                        </div>
+                        <div class="status-banner-metric">
+                            <div class="status-banner-metric-val">${data.high_severity}</div>
+                            <div class="status-banner-metric-lbl">High Priority</div>
+                        </div>
+                        <div class="status-banner-metric">
+                            <div class="status-banner-metric-val">${data.resolution_rate}%</div>
+                            <div class="status-banner-metric-lbl">Resolved</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // ── Priority Actions Table ─────────────────────────────────────────
+            const pBody = document.getElementById('priorityTableBody');
+            pBody.innerHTML = '';
+            if (data.priority_actions && data.priority_actions.length > 0) {
+                data.priority_actions.forEach(c => {
+                    pBody.innerHTML += `
+                        <tr>
+                            <td><strong>${c.location}</strong></td>
+                            <td>${c.issue_type}</td>
+                            <td><span class="badge badge-high">${c.severity}</span></td>
+                            <td><span class="badge badge-pending">Pending</span></td>
+                            <td><a href="management.html" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">View</a></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                pBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-gray); padding: 2rem;">
+                            <i class="fas fa-check-circle" style="color: var(--success); font-size: 1.5rem; margin-bottom: 0.5rem; display: block;"></i>
+                            All high priority complaints have been resolved or assigned.
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // ── Smart Area / Ward Cards ────────────────────────────────────────
+            const wGrid = document.getElementById('wardGrid');
+            wGrid.innerHTML = '';
+            Object.entries(data.health_data).forEach(([area, info]) => {
+                let badgeClass = 'badge-resolved';
+                if (info.risk === 'Critical') badgeClass = 'badge-high';
+                else if (info.risk === 'Moderate') badgeClass = 'badge-pending';
+
+                wGrid.innerHTML += `
+                    <div class="ward-card" onclick="openWardModal('${area}', ${info.score}, '${info.risk}', ${info.total})">
+                        <div class="ward-header">
+                            <span class="ward-title">${area}</span>
+                            <span class="badge ${badgeClass}" style="font-size: 0.65rem;">${info.risk}</span>
+                        </div>
+                        <div class="ward-score-wrap">
+                            <span class="ward-score">${info.score}</span>
+                            <span class="ward-score-label">health score</span>
+                        </div>
+                        <div class="ward-footer">
+                            <span><i class="fas fa-file-invoice" style="margin-right: 0.25rem;"></i>${info.total} files</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // ── Activity Log ───────────────────────────────────────────────────
+            loadActivityLog();
+
+            // ── Notifications (with Authority Review) ─────────────────────────
+            generateNotifications(data, authorityPending);
+        }
+
+        // ── Ward Modal ──────────────────────────────────────────────────────────
+        const modal    = document.getElementById('wardModal');
+        const overlay  = document.getElementById('modalOverlay');
+        const closeBtn = document.getElementById('closeModalBtn');
+
+        closeBtn.addEventListener('click', closeModal);
+        overlay.addEventListener('click', closeModal);
+
+        function closeModal() {
+            modal.classList.remove('open');
+            overlay.classList.remove('open');
+        }
+
+        async function openWardModal(name, score, risk, total) {
+            document.getElementById('modalWardName').innerText  = `${name} Performance Overview`;
+            document.getElementById('modalWardScore').innerText = score;
+
+            let badgeClass = 'badge-resolved';
+            if (risk === 'Critical') badgeClass = 'badge-high';
+            else if (risk === 'Moderate') badgeClass = 'badge-pending';
+            document.getElementById('modalWardRiskBadge').innerHTML = `<span class="badge ${badgeClass}">${risk}</span>`;
+
+            document.getElementById('modalWardTotalText').innerText = `Total issues logged: ${total}`;
+
+            const complaints    = await Utils.get('/complaints');
+            const areaComplaints = complaints.filter(c => c.location === name);
+
+            const water      = areaComplaints.filter(c => c.issue_type === 'Water Contamination').length;
+            const sanitation = areaComplaints.filter(c => c.issue_type === 'Sanitation').length;
+            const drainage   = areaComplaints.filter(c => c.issue_type === 'Drainage Overflow').length;
+
+            document.getElementById('modalWardWaterCount').innerText = water;
+            document.getElementById('modalWardSanCount').innerText   = sanitation;
+            document.getElementById('modalWardDrainCount').innerText = drainage;
+
+            const list = document.getElementById('modalWardActions');
+            list.innerHTML = '';
+            let actions = [];
+            if (water > 0)      actions.push({ icon: 'fa-tint',     text: 'Initiate critical water quality test and alert Ward inspector.' });
+            if (sanitation > 0) actions.push({ icon: 'fa-trash-alt', text: 'Dispatch sanitization clearing crews and schedule waste cleanup.' });
+            if (drainage > 0)   actions.push({ icon: 'fa-water',    text: 'Coordinate high-priority pipeline clearing before flooding hazards.' });
+            if (actions.length === 0) {
+                actions.push({ icon: 'fa-check-circle', text: 'No critical threats. Standard structural monitoring schedules apply.' });
+            }
+            actions.forEach(a => {
+                list.innerHTML += `
+                    <div class="decision-action-item">
+                        <i class="fas ${a.icon}"></i>
+                        <span>${a.text}</span>
+                    </div>
+                `;
+            });
+
+            modal.classList.add('open');
+            overlay.classList.add('open');
+        }
+
+        // ── Activity Log ────────────────────────────────────────────────────────
+        function loadActivityLog() {
+            const list = document.getElementById('activityLog');
+            list.innerHTML = '';
+            const logData = localStorage.getItem('ptp_activity_log');
+            if (logData) {
+                const logs = JSON.parse(logData)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                    .slice(0, 5);
+                if (logs.length > 0) {
+                    logs.forEach(l => {
+                        const timeStr = new Date(l.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        list.innerHTML += `
+                            <div class="timeline-item">
+                                <div class="timeline-time">${timeStr}</div>
+                                <div class="timeline-desc">${l.action} (Complaint #${l.complaint_id})</div>
+                            </div>
+                        `;
+                    });
+                    return;
+                }
+            }
+            list.innerHTML = `<p style="color: var(--text-gray); font-size: 0.85rem; text-align: center; padding: 2rem 0;">No command center activities logged in this session.</p>`;
+        }
+
+        // ── Notification generator ──────────────────────────────────────────────
+        // authorityPending = count of reports 'Sent to Authority'
+        function generateNotifications(data, authorityPending) {
+            const nList = document.getElementById('notiList');
+            const badge = document.getElementById('notiBadge');
+            nList.innerHTML = '';
+
+            let notifications = [];
+
+            // Critical ward alerts
+            Object.entries(data.health_data).forEach(([area, info]) => {
+                if (info.risk === 'Critical') {
+                    notifications.push({
+                        title: `Critical Status Alert: ${area}`,
+                        text:  `Health rating is critical (${info.score}%) due to pending issues.`,
+                        time:  'Just now',
+                        icon:  'fa-exclamation-triangle',
+                        color: 'var(--danger)'
+                    });
+                }
+            });
+
+            // Pending critical complaints
+            if (data.pending_critical > 0) {
+                notifications.push({
+                    title: 'Urgent Backlog Incident',
+                    text:  `There are ${data.pending_critical} unresolved high-severity complaints.`,
+                    time:  'Check priority dashboard',
+                    icon:  'fa-bell',
+                    color: 'var(--warning)'
+                });
+            }
+
+            // Authority Review Pending (new v2.0 notification)
+            if (authorityPending > 0) {
+                notifications.push({
+                    title: 'Authority Review Pending',
+                    text:  `${authorityPending} report${authorityPending > 1 ? 's' : ''} sent to authority await${authorityPending === 1 ? 's' : ''} review & action.`,
+                    time:  'Review in Report History',
+                    icon:  'fa-university',
+                    color: '#a855f7'
+                });
+            }
+
+            if (notifications.length > 0) {
+                badge.style.display = 'flex';
+                badge.innerText     = notifications.length;
+                notifications.forEach(n => {
+                    nList.innerHTML += `
+                        <div class="notification-item">
+                            <div style="display: flex; gap: 0.75rem; align-items: start;">
+                                <i class="fas ${n.icon}" style="color: ${n.color}; margin-top: 0.2rem;"></i>
+                                <div>
+                                    <div style="font-weight: 700; color: white;">${n.title}</div>
+                                    <div style="color: var(--text-gray); margin-top: 0.25rem;">${n.text}</div>
+                                    <div class="notification-item-time">${n.time}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                badge.style.display = 'none';
+                nList.innerHTML = `<div style="text-align: center; color: var(--text-gray); padding: 2rem 0; font-size: 0.85rem;">All systems operational. No active notifications.</div>`;
+            }
+        }
+
+        initDashboard();
+    </script>
+</body>
+</html>
