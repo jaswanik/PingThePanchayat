@@ -26,50 +26,44 @@ window.requireAdmin = function() {
 // Initialize or extend the global Utils object
 window.Utils = window.Utils || {};
 
-// Add or override utility functions
-if (!window.Utils.post) {
-    window.Utils.post = async function(url, data) {
-        try {
-            const res = await fetch(`${window.API_BASE}${url}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            return await res.json();
-        } catch (err) {
-            console.error(`Utils.post failed for ${url}:`, err);
-            throw err;
-        }
-    };
-}
+window.Utils.post = async function(url, data) {
+    try {
+        const res = await fetch(`${window.API_BASE}${url}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return await res.json();
+    } catch (err) {
+        console.error(`Utils.post failed for ${url}:`, err);
+        throw err;
+    }
+};
 
-if (!window.Utils.get) {
-    window.Utils.get = async function(url) {
-        try {
-            const res = await fetch(`${window.API_BASE}${url}`);
-            return await res.json();
-        } catch (err) {
-            console.error(`Utils.get failed for ${url}:`, err);
-            throw err;
-        }
-    };
-}
+window.Utils.get = async function(url) {
+    try {
+        const res = await fetch(`${window.API_BASE}${url}`);
+        return await res.json();
+    } catch (err) {
+        console.error(`Utils.get failed for ${url}:`, err);
+        throw err;
+    }
+};
 
-if (!window.Utils.patch) {
-    window.Utils.patch = async function(url, data) {
-        try {
-            const res = await fetch(`${window.API_BASE}${url}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            return await res.json();
-        } catch (err) {
-            console.error(`Utils.patch failed for ${url}:`, err);
-            throw err;
-        }
-    };
-}
+window.Utils.patch = async function(url, data) {
+    try {
+        const res = await fetch(`${window.API_BASE}${url}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return await res.json();
+    } catch (err) {
+        console.error(`Utils.patch failed for ${url}:`, err);
+        throw err;
+    }
+};
+
 
 window.Utils.saveAdmin = function(admin) {
     localStorage.setItem('ptp_admin', JSON.stringify(admin));
